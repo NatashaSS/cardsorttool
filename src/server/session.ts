@@ -10,6 +10,7 @@ export type AdminSession = { isAdmin?: boolean; email?: string; loggedInAt?: str
 
 export const SESSION_COOKIE = "cardsort_admin";
 
+/** NOTE: src/proxy.ts duplicates the cookie name and TTL (it cannot import this file). */
 export function sessionOptions(): SessionOptions {
   return {
     password: env.sessionSecret,

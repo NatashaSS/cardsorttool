@@ -430,7 +430,15 @@ boards. The UI always shows `n`.
 - Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`; in `.env` files each
   `$` is escaped as `\$` because Next.js expands variables there — the server accepts both forms); session cookie is
   signed/encrypted with `SESSION_SECRET`, HTTP-only, `SameSite=Lax`, `Secure` in production
-  [AUTH-01..04]. Login rate-limited in memory per IP [AUTH-05].
+  [AUTH-01..04].
+- Two auth layers: `src/proxy.ts` unseals the cookie itself (it can't import `server-only`
+  modules) and redirects `/admin/**` to `/admin/login?next=…` / returns `401` for `/api/admin/**`
+  (login and logout excepted); the `(protected)` layout and `requireAdmin()` check again.
+  `?next=` only accepts same-origin `/admin` paths. Logout is `POST /api/admin/logout` → `303`.
+- Login rate limiting [AUTH-05]: in-memory sliding window of failed attempts per client IP
+  (`x-forwarded-for` → `x-real-ip` → `"unknown"`), 10 per 15 min; a successful login clears the
+  counter; counters reset on restart. IP headers are only trustworthy behind the reverse proxy, so
+  run the app behind Caddy/nginx that sets them.
 - Participant access is capability-based: the board token *is* the credential; tokens have
   ≥ 128 bits of entropy; slugs are random too [PART-04, STU-11].
 - All mutations validated server-side with zod and the capabilities matrix [SAVE-04, NFR-06].

@@ -111,6 +111,7 @@ Environment variables (see `.env.example`): `DATABASE_PATH`, `ADMIN_EMAIL`, `ADM
 - In `.env` files, every `$` in `ADMIN_PASSWORD_HASH` must be written `\$` — Next.js expands
   `$VARS` even inside quotes. `npm run hash-password` prints the escaped line.
 - SQLite is used in **both** development and production — never add another database.
+- e2e defaults to port 3100 / `data/e2e.db`; set `E2E_PORT=31xx` to run another suite in parallel.
 - Playwright uses the pre-installed Chromium; on a new machine run `npx playwright install chromium`.
 
 ## Conventions
