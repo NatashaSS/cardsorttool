@@ -305,6 +305,25 @@ Goal: every change is persisted immediately without the board ever feeling slow 
 Because a board belongs to one participant, conflicts only occur with multiple tabs; the
 revision check makes that safe without locking.
 
+Board service details (`src/server/services/boards*`):
+
+- **Error precedence** for an op: unknown token `not_found` → `board_completed` →
+  `study_not_live` → `stale_revision` (with `details.revision` = current) → per op: `forbidden`
+  (capability), `not_found` (card/group not owned by this study/board), `conflict` (client id
+  already used anywhere). Group/card limits (`maxParticipantGroups`, `LIMITS.maxParticipantCards`)
+  are `forbidden`.
+- **`moveCard.toIndex`** is the index in the target list *after* removing the card (dnd-kit
+  `arrayMove` semantics), clamped. Moving to the tray ignores `toIndex`.
+- **Tray order**: `board.cardOrder`, then predefined cards missing from it, then participant cards
+  by creation (per-board `position`).
+- **`addGroup` with `withCardId`** places that card first in the new group.
+- **Completion** does not bump the revision; it's idempotent (a completed board returns its stored
+  `completedAt` even if the study was closed since); a `422` carries `CompletionBlocker[]` as
+  `details`.
+- **`getPublicStudy`** returns any status so the intro page can show "not accepting responses";
+  only unknown slugs are `404`.
+- Participant API responses send `Cache-Control: no-store`.
+
 ---
 
 ## 9. Completion flow
