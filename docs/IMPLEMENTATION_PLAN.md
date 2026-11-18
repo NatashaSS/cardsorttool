@@ -155,6 +155,13 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 
 ## 4. Wave 1 — parallel streams
 
+### Shared helpers added before the second Wave 1 batch
+
+- `src/lib/storage-keys.ts` — localStorage key + safe read/write for the resume token (F1, F2).
+- `tests/e2e/helpers.ts` — `e2eDb()` (seed the e2e DB with the factories) and `loginAsAdmin(page)`.
+  **Login contract for stream A:** `POST /api/admin/login` with JSON `{ email, password }` → `200`
+  + session cookie; `401` on bad credentials; `429` when rate-limited.
+
 ### A. Admin authentication UI
 
 - **Requirements:** AUTH-02, AUTH-03 (redirect behaviour), AUTH-04, AUTH-05.
