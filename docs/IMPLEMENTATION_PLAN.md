@@ -54,8 +54,10 @@ other's code. Wave 2 streams depend on merged Wave 1 code.
 - **Definition of done per stream:** all listed requirement IDs meet their acceptance criteria;
   tests named with those IDs pass; `npm run lint`, `npm run typecheck`, `npm test` pass in the
   worktree.
-- **Worktree setup:** a fresh worktree has no `node_modules`; symlink it from the main checkout
-  (`ln -s ../../../node_modules node_modules`) to run checks, and never commit the link.
+- **Worktree setup:** a fresh worktree has no `node_modules`. Hard-link a copy from the main
+  checkout: `cp -al ../../../node_modules node_modules` (a symlink works for lint/tests but
+  Turbopack's dev server — and so e2e — refuses packages outside the project root). Delete it
+  before committing.
 - **Final report** from every agent: what was built, files touched, requirement IDs covered (and
   any not covered + why), requested shared-file changes, deviations from the docs, open questions.
 

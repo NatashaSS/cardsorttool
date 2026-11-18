@@ -86,9 +86,9 @@ mode are hidden in the UI and ignored by the server (see the matrix in DESIGN.md
 
 | ID | P | Requirement | Acceptance criteria |
 |---|---|---|---|
-| PART-01 | M | Opening the study link shows an intro page with the study title and a "Start" action, followed by the details form (if any fields are enabled). | If the study is `draft` or `closed`, a friendly "This study is not currently accepting responses" page is shown instead. |
+| PART-01 | M | Opening the study link shows an intro page with the study title and a "Start" action, followed by the details form (if any fields are enabled). | If the study is `draft` or `closed`, a friendly "This study is not currently accepting responses" page is shown instead. An unknown link shows a friendly "We couldn't find this study" 404 page. |
 | PART-02 | M | Submitting the details form creates a new board and redirects to the board's unique URL. | The board URL contains an unguessable token (≥ 128 bits of randomness). Participant answers are stored on the board. |
-| PART-03 | M | A participant can resume an in-progress board. | Revisiting the board URL restores the exact state. Revisiting the study link from the same browser offers "Continue where you left off" (token kept in local storage) and "Start a new sort". |
+| PART-03 | M | A participant can resume an in-progress board. | Revisiting the board URL restores the exact state. Revisiting the study link from the same browser offers "Continue where you left off" (token kept in local storage) and "Start a new sort". If the stored board is completed it offers "View your completed sort" instead; if it no longer exists the token is forgotten and only "Start" is offered. |
 | PART-04 | M | Boards cannot be accessed without their token. | Requests with an unknown token return `404`. One board's token gives no access to any other board. |
 | PART-05 | M | Opening a completed board shows it read-only with a "You have completed this card sort — thank you" message. | No drag, add, rename or delete controls are active. |
 | PART-06 | M | If a study is closed while a board is in progress, that board becomes read-only. | The server rejects changes; the board shows a "This study has been closed" message. Reopening the study (`closed → live`) makes it editable again. |
