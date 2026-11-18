@@ -54,6 +54,8 @@ other's code. Wave 2 streams depend on merged Wave 1 code.
 - **Definition of done per stream:** all listed requirement IDs meet their acceptance criteria;
   tests named with those IDs pass; `npm run lint`, `npm run typecheck`, `npm test` pass in the
   worktree.
+- **Worktree setup:** a fresh worktree has no `node_modules`; symlink it from the main checkout
+  (`ln -s ../../../node_modules node_modules`) to run checks, and never commit the link.
 - **Final report** from every agent: what was built, files touched, requirement IDs covered (and
   any not covered + why), requested shared-file changes, deviations from the docs, open questions.
 
@@ -232,7 +234,8 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 - **Builds:** study list, create form, editor tabs (Details, Type & groups, Cards, Participant
   fields, Settings), status controls with confirmation, read-only rendering when not draft,
   copy-link button, duplicate action. Calls stream C's API.
-- **Develops against:** the admin input schemas and `StudyDTO`; full e2e after C merges.
+- **Develops against:** the admin input schemas and `StudyDetailDTO`; C is merged, so it can call
+  the real API. Disable "open" as a sort type while predefined groups exist (the server rejects it).
 
 ### Integration checkpoint 1 (coordinator)
 

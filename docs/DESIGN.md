@@ -261,8 +261,24 @@ op can be applied optimistically without waiting for the server; the server vali
 format and rejects duplicates. New participant groups are appended after existing groups.
 Participant group names may be blank while editing; PERM-06 blocks completion instead.
 
-Admin endpoints live under `/api/admin/**` (studies CRUD, cards, groups, status transitions, board
-exclude/delete, CSV export, analysis data) and all require the session [AUTH-03].
+Admin endpoints live under `/api/admin/**` and all require the session [AUTH-03]:
+
+| Method & path | Purpose |
+|---|---|
+| `GET/POST /api/admin/studies` | List (newest first) / create (201) |
+| `GET/PATCH/DELETE /api/admin/studies/[id]` | Detail / partial update / delete (204) |
+| `POST /api/admin/studies/[id]/status` | `{ status }` transition; publish problems in `details.problems` |
+| `POST /api/admin/studies/[id]/duplicate` | Copy as draft (201) |
+| `POST /api/admin/studies/[id]/cards` · `PATCH/DELETE …/cards/[cardId]` | Predefined cards (PATCH takes a full card body) |
+| `POST …/cards/reorder` · `POST …/cards/bulk` | `{ ids }` exact permutation / `{ text }` paste |
+| `POST …/groups` · `PATCH/DELETE …/groups/[groupId]` · `POST …/groups/reorder` | Predefined groups (closed/hybrid only) |
+| `…/[id]/boards/**`, `…/[id]/export/**`, `…/[id]/analysis/**` | Results, CSV, analysis (streams H, I) |
+
+Study config normalisation (service layer): `groupMode: "fixed"` is only valid for open sorts and
+needs `fixedGroupCount` 1–30; changing sort type away from open resets the mode to `unbounded`;
+`fixedGroupCount` is cleared unless open+fixed; `maxParticipantGroups` (1–100) is kept only for
+open-unbounded and hybrid. Card/group ids of another study or of a board return 404. Stored settings
+and participant fields are re-validated on read and fall back to defaults if invalid.
 
 ---
 
