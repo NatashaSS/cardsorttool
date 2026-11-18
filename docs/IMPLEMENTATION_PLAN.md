@@ -246,7 +246,8 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 - **Develops against:** the admin input schemas and `StudyDetailDTO`; C is merged, so it can call
   the real API. Disable "open" as a sort type while predefined groups exist (the server rejects it).
 
-> **Progress:** E, C and D are merged (178 tests passing). Remaining in Wave 1: A, F1, F2, G.
+> **Progress:** E, C, D, F2, A and G are merged (236 unit/integration + 20 e2e tests passing).
+> Remaining in Wave 1: F1.
 
 ### Integration checkpoint 1 (coordinator)
 

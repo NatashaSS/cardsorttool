@@ -8,7 +8,7 @@ if (!password) {
 }
 const hash = bcrypt.hashSync(password, 12);
 // Next.js expands $VARS in .env files (even quoted), so "$" must be escaped there.
-console.log("Add this line to your .env file:\n");
+// Next.js expands $ sequences in .env files (and in real env vars that .env also defines),
+// so always use the escaped form; the server unescapes it (src/server/env.ts).
+console.log("Add this line to your .env file (or set the variable to this value):\n");
 console.log(`ADMIN_PASSWORD_HASH=${hash.replace(/\$/g, "\\$")}`);
-console.log("\n(If you set the variable directly in the environment instead, use the raw hash:)");
-console.log(hash);

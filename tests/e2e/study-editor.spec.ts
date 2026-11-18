@@ -1,37 +1,8 @@
 // Stream G: admin study list + editor end to end.
 import { expect, test, type Page } from "@playwright/test";
-import { sealData } from "iron-session";
-import { E2E_ADMIN_EMAIL } from "./fixtures";
 import { loginAsAdmin } from "./helpers";
 
-/**
- * TEMPORARY (until stream A's POST /api/admin/login is merged): if the login API doesn't
- * exist yet, forge the admin session cookie with the e2e SESSION_SECRET from
- * playwright.config.ts. Remove this fallback once loginAsAdmin works everywhere.
- */
-async function login(page: Page): Promise<void> {
-  try {
-    await loginAsAdmin(page);
-  } catch (err) {
-    if (!String(err).includes(": 404")) throw err;
-    const value = await sealData(
-      { isAdmin: true, email: E2E_ADMIN_EMAIL, loggedInAt: new Date().toISOString() },
-      { password: "e2e-session-secret-at-least-32-characters-long", ttl: 60 * 60 },
-    );
-    await page
-      .context()
-      .addCookies([
-        {
-          name: "cardsort_admin",
-          value,
-          domain: "localhost",
-          path: "/",
-          httpOnly: true,
-          sameSite: "Lax",
-        },
-      ]);
-  }
-}
+const login = (page: Page) => loginAsAdmin(page);
 
 /** The visible tab panel of the editor (hidden panels stay mounted). */
 const panel = (page: Page) => page.getByRole("tabpanel");

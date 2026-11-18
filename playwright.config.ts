@@ -21,7 +21,9 @@ export default defineConfig({
     env: {
       DATABASE_PATH: E2E_DB,
       ADMIN_EMAIL: E2E_ADMIN_EMAIL,
-      ADMIN_PASSWORD_HASH: bcrypt.hashSync(E2E_ADMIN_PASSWORD, 4),
+      // Escaped "$": Next.js expands $ sequences in env vars that .env also defines, and the
+      // server unescapes "\\$" itself, so the escaped form is safe in every case.
+      ADMIN_PASSWORD_HASH: bcrypt.hashSync(E2E_ADMIN_PASSWORD, 4).replace(/\$/g, "\\$"),
       SESSION_SECRET: "e2e-session-secret-at-least-32-characters-long",
       PUBLIC_BASE_URL: baseURL,
     },

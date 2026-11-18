@@ -181,6 +181,12 @@ This matrix is implemented once, as a pure function
 `src/server/services/permissions.ts`, used by **both** the server (enforcement) and the client
 (showing/hiding controls) so they can't drift apart.
 
+The admin editor (`src/components/admin/study-editor/settings-model.ts`) shows only the settings
+that apply: PERM-02 only when PERM-01 is on; PERM-03, PERM-06 and PERM-07 hidden for closed sorts;
+PERM-04 only for open-unbounded and hybrid. Hidden settings keep their stored value (and are
+ignored by the server rules). The participant group limit (STU-06) is an opt-in checkbox + number,
+shown only for open-unbounded and hybrid.
+
 In fixed-mode open sorts, placeholder groups are named "Group 1"…"Group N". If
 `requireGroupNames` is on, a non-empty placeholder still carrying its default name blocks
 completion.
@@ -427,8 +433,9 @@ boards. The UI always shows `n`.
 
 ## 12. Security
 
-- Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`; in `.env` files each
-  `$` is escaped as `\$` because Next.js expands variables there — the server accepts both forms); session cookie is
+- Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`, always written with each
+  `$` escaped as `\$` because Next.js expands `$…` in `.env` and in env vars `.env` also defines —
+  the server unescapes it); session cookie is
   signed/encrypted with `SESSION_SECRET`, HTTP-only, `SameSite=Lax`, `Secure` in production
   [AUTH-01..04].
 - Two auth layers: `src/proxy.ts` unseals the cookie itself (it can't import `server-only`
