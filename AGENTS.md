@@ -41,6 +41,7 @@ function); `params`/`searchParams`/`cookies()` are async; `PageProps<"/route">` 
 ## Repository layout
 
 ```
+README.md                 user-facing setup (Docker and npm)
 AGENTS.md / CLAUDE.md     agent guidance (CLAUDE.md just includes this file)
 docs/                     REQUIREMENTS.md, DESIGN.md, IMPLEMENTATION_PLAN.md
 src/
@@ -74,7 +75,9 @@ src/
     services/             business logic (studies, boards, results, export, analysis-data)
     analysis/             pure analysis functions
 drizzle/                  generated SQL migrations (committed)
-scripts/                  migrate, seed, hash-password, req-coverage
+scripts/                  migrate, seed, hash-password (plain JS, also used in the image), req-coverage
+Dockerfile, docker-compose.yml, .dockerignore   production container (standalone Next build)
+src/instrumentation.ts    runs DB migrations on server start when AUTO_MIGRATE=1 (set in the image)
 tests/
   helpers/                createTestDb(), factories (makeStudy/makeCard/…), rulesConfig()
   unit/                   Vitest unit tests (pure functions)
@@ -103,14 +106,16 @@ npm run dev                        # http://localhost:3000
 | `npm run lint` / `npm run typecheck` | ESLint / route typegen + `tsc --noEmit` |
 | `npm test` | Vitest unit + integration tests |
 | `npm run test:e2e` | Playwright end-to-end tests (starts its own dev server on :3100) |
+| `docker compose up -d --build` | Build and run the production container (see README.md) |
 | `npm run req:coverage` | Which requirement IDs are referenced by tests (`-- --strict` fails on missing **M**) |
 
 Environment variables (see `.env.example`): `DATABASE_PATH`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`,
 `SESSION_SECRET` (≥ 32 chars), `PUBLIC_BASE_URL`.
 
-- Write every `$` in `ADMIN_PASSWORD_HASH` as `\$` — in `.env` **and** in real environment
-  variables. Next.js expands `$…` inside `.env` (even quoted), and also re-expands a real env var
-  when `.env` defines the same key. The server unescapes `\$`. `npm run hash-password` prints it.
+- `ADMIN_PASSWORD_HASH` should use the `b64:<base64>` form that `npm run hash-password` prints.
+  A raw bcrypt hash contains `$`, which Next.js expands inside `.env` (even quoted, and even in a
+  real env var when `.env` defines the same key) and Docker Compose also interpolates. The server
+  also accepts the raw hash or `\$`-escaped form.
 - SQLite is used in **both** development and production — never add another database.
 - e2e defaults to port 3100 / `data/e2e.db`; set `E2E_PORT=31xx` to run another suite in parallel.
 - Playwright uses the pre-installed Chromium; on a new machine run `npx playwright install chromium`.

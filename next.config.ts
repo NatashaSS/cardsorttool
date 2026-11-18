@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   // database or the session at request time. Pages that read data export
   // `dynamic = "force-dynamic"` (see AGENTS.md).
   serverExternalPackages: ["better-sqlite3"],
+  // Self-contained server bundle in .next/standalone — only for the Docker image (its build stage
+  // sets NEXT_OUTPUT=standalone); `npm run start` keeps using `next start`.
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   turbopack: {
     rules: {
       "*.css": {

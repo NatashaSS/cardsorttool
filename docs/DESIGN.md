@@ -452,9 +452,8 @@ boards. The UI always shows `n`.
 
 ## 12. Security
 
-- Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`, always written with each
-  `$` escaped as `\$` because Next.js expands `$…` in `.env` and in env vars `.env` also defines —
-  the server unescapes it); session cookie is
+- Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`, in the `b64:` form —
+  see §13); session cookie is
   signed/encrypted with `SESSION_SECRET`, HTTP-only, `SameSite=Lax`, `Secure` in production
   [AUTH-01..04].
 - Two auth layers: `src/proxy.ts` unseals the cookie itself (it can't import `server-only`
@@ -476,15 +475,30 @@ boards. The UI always shows `n`.
 
 ## 13. Deployment (self-hosted)
 
-- `npm ci && npm run build`, then `npm run db:migrate && npm run start` (port configurable).
-- `npm run hash-password -- '<password>'` prints the `ADMIN_PASSWORD_HASH` line for `.env`.
-- Env: `DATABASE_PATH` (e.g. `/var/lib/cardsort/cardsort.db`), `ADMIN_EMAIL`,
-  `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `PUBLIC_BASE_URL` (for share links).
-- Run under systemd (or a Docker container with the DB directory as a volume) behind
-  Caddy/nginx for TLS.
-- Backups: `sqlite3 cardsort.db ".backup backup.db"` is safe while the app runs (WAL) [NFR-08].
+**Docker (recommended)** — `Dockerfile` + `docker-compose.yml` (user steps in `README.md`):
 
----
+- Multi-stage build on `node:22-bookworm-slim`: `npm ci --ignore-scripts` (better-sqlite3 uses its
+  bundled prebuilt binaries for linux x64/arm64, so no compiler is needed), then `next build`
+  with `NEXT_OUTPUT=standalone`, which `next.config.ts` turns into `output: "standalone"`. The
+  runtime image contains only `.next/standalone`, static assets, `drizzle/` migrations and the
+  `hash-password.mjs` script (+ bcryptjs). It runs as the `node` user and has a health check on
+  `/admin/login`.
+- `AUTO_MIGRATE=1` in the image makes `src/instrumentation.ts` apply migrations on server start.
+- SQLite lives at `/data/cardsort.db` on the `cardsort-data` named volume. Compose reads `.env`
+  via `env_file` and forces `DATABASE_PATH=/data/cardsort.db`; host port `CARDSORT_PORT` (default 3000).
+
+**Without Docker:** `npm ci && npm run build`, then `npm run db:migrate && npm run start`, under
+systemd or similar.
+
+Both:
+
+- Env: `DATABASE_PATH`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `PUBLIC_BASE_URL`.
+- `ADMIN_PASSWORD_HASH` uses the `b64:<base64 of bcrypt hash>` form printed by
+  `npm run hash-password` (no `$`, which Next.js and Compose would otherwise expand). The raw or
+  `\$`-escaped hash is also accepted.
+- Run behind Caddy/nginx for TLS; it must set `X-Forwarded-For` (login rate limiting).
+- Backups: SQLite's online backup API (`.backup`) is safe while the app runs (WAL) [NFR-08];
+  README.md has a one-line command for the container.
 
 ## 14. Delivery phases
 

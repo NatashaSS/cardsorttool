@@ -15,7 +15,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "hash-password": "tsx scripts/hash-password.ts",
+    "hash-password": "node scripts/hash-password.mjs",
     "req:coverage": "tsx scripts/req-coverage.ts"
   },
   "dependencies": {

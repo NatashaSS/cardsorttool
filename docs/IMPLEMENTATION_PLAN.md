@@ -306,7 +306,8 @@ All three merged; `npm run req:coverage` shows every **M** requirement covered; 
   PERM-07, PERM-09, RES-06 auto-refresh, ANL-07 — whichever weren't finished earlier.
 - **L. Hardening & deployment:** NFR-04 load check with 200 cards / 1 000 boards (seed script),
   NFR-05/06 audit, AUTH-05, security review, `Dockerfile` + systemd unit example, backup docs
-  (NFR-08), README.
+  (NFR-08), README. **Partly done early:** Dockerfile, docker-compose.yml, README.md and backup
+  docs were added before Wave 2; L still covers systemd example, load checks and security review.
 
 ---
 

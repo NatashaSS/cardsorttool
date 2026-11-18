@@ -1,0 +1,26 @@
+# Run the card sort tool with Docker Compose:
+#
+#   cp .env.example .env                      # then set ADMIN_EMAIL, SESSION_SECRET, PUBLIC_BASE_URL
+#   docker compose build
+#   docker compose run --rm --no-deps cardsort node scripts/hash-password.mjs 'your-password'
+#                                             # paste the printed ADMIN_PASSWORD_HASH line into .env
+#   docker compose up -d
+#
+# The SQLite database is stored in the named volume "cardsort-data" (mounted at /data).
+# Migrations run automatically on start (AUTO_MIGRATE=1 in the image).
+services:
+  cardsort:
+    build: .
+    image: cardsorttool:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Override any local path from .env: inside the container the DB lives on the volume.
+      DATABASE_PATH: /data/cardsort.db
+    ports:
+      - "${CARDSORT_PORT:-3000}:3000"
+    volumes:
+      - cardsort-data:/data
+
+volumes:
+  cardsort-data:
