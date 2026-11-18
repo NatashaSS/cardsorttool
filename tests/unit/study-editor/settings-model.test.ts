@@ -10,11 +10,18 @@ const ctx = (
   sortType: SettingsContext["sortType"],
   groupMode: SettingsContext["groupMode"] = "unbounded",
   allowParticipantCards = false,
-): SettingsContext => ({ sortType, groupMode, settings: { allowParticipantCards } });
+  allowRenameGroups = true,
+): SettingsContext => ({ sortType, groupMode, settings: { allowParticipantCards, allowRenameGroups } });
 
 const keys = (c: SettingsContext) => visibleSettings(c).map((m) => m.key);
 
 describe("settings visibility (DESIGN §5 matrix)", () => {
+  it("PERM-06: 'groups must be named' is hidden when participants cannot rename groups", () => {
+    expect(keys(ctx("open", "unbounded", false, true))).toContain("requireGroupNames");
+    expect(keys(ctx("open", "unbounded", false, false))).not.toContain("requireGroupNames");
+    expect(keys(ctx("hybrid", "unbounded", false, false))).not.toContain("requireGroupNames");
+  });
+
   it("PERM-01..09: every setting has a label, hint and requirement id", () => {
     expect(SETTINGS_META.map((m) => m.requirement)).toEqual([
       "PERM-01",

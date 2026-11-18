@@ -19,43 +19,20 @@ export type BoardModel = {
   trayOrder: string[];
 };
 
-/** True when `sub` appears in `full` in the same relative order. */
-function isSubsequence(sub: readonly string[], full: readonly string[]): boolean {
-  let i = 0;
-  for (const id of full) if (id === sub[i]) i++;
-  return i === sub.length;
-}
-
-/**
- * Build the client model from the server state.
- *
- * The DTO does not carry board.cardOrder, so the rank of cards currently placed in groups is
- * reconstructed: without randomisation (PERM-08 off) cardOrder is the admin order, i.e. the DTO
- * order of predefined cards. With randomisation, the relative order of the unsorted predefined
- * cards is known and placed predefined cards are ranked after them (best effort until the DTO
- * exposes the full order).
- */
+/** Build the client model from the server state (trayOrder is the server's fixed tray ranking). */
 export function modelFromState(
-  state: Pick<BoardStateDTO, "cards" | "groups" | "unsortedCardIds" | "study">,
+  state: Pick<BoardStateDTO, "cards" | "groups" | "unsortedCardIds" | "trayOrder">,
 ): BoardModel {
-  const predefined = state.cards.filter((c) => c.origin === "predefined").map((c) => c.id);
-  const participant = state.cards.filter((c) => c.origin === "participant").map((c) => c.id);
-  const predefSet = new Set(predefined);
-  const unsortedPredef = state.unsortedCardIds.filter((id) => predefSet.has(id));
-
-  let predefRank: string[];
-  if (!state.study.settings.randomizeCardOrder && isSubsequence(unsortedPredef, predefined)) {
-    predefRank = predefined;
-  } else {
-    const seen = new Set(unsortedPredef);
-    predefRank = [...unsortedPredef, ...predefined.filter((id) => !seen.has(id))];
-  }
-
+  const ids = new Set(state.cards.map((c) => c.id));
+  const ranked = state.trayOrder.filter((id) => ids.has(id));
+  const seen = new Set(ranked);
+  // Defensive: any card missing from trayOrder goes last, in DTO order.
+  for (const c of state.cards) if (!seen.has(c.id)) ranked.push(c.id);
   return {
     cards: state.cards.map((c) => ({ ...c })),
     groups: state.groups.map((g) => ({ ...g, cardIds: [...g.cardIds] })),
     unsortedCardIds: [...state.unsortedCardIds],
-    trayOrder: [...predefRank, ...participant],
+    trayOrder: ranked,
   };
 }
 

@@ -52,6 +52,12 @@ describe("getCompletionBlockers", () => {
     expect(codes(state({ study: relaxed, groups }))).toEqual([]);
   });
 
+  it("PERM-06: naming is not required when participants cannot rename groups", () => {
+    const groups = [group({ name: "Group 1", cardIds: ["a"] })];
+    const noRename = rulesConfig({ sortType: "open", settings: { allowRenameGroups: false } });
+    expect(codes(state({ study: noRename, groups }))).toEqual([]);
+  });
+
   it("PERM-06: predefined groups and closed sorts are exempt from naming", () => {
     const groups = [group({ name: "Group 1", kind: "predefined", cardIds: ["a"] })];
     expect(codes(state({ study: rulesConfig({ sortType: "closed" }), groups }))).toEqual([]);

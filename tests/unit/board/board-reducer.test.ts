@@ -18,20 +18,22 @@ function sample(): BoardModel {
         group("group-2", ["card-d"], "predefined"),
       ],
       unsortedCardIds: ["card-c", "card-a", "card-e"],
+      trayOrder: ["card-c", "card-a", "card-e", "card-b", "card-d"],
     }),
   );
 }
 
 describe("board reducer (SAVE-02 optimistic updates mirror the server)", () => {
-  it("SAVE-02: modelFromState ranks unsorted cards first, then placed predefined, then participant cards", () => {
+  it("SAVE-02: modelFromState uses the server's tray ranking, appending unknown cards", () => {
     const m = modelFromState(
       boardState({
         cards: [card("card-a"), card("card-b"), card("card-c"), card("own-x", "participant")],
         groups: [group("group-1", ["card-b"])],
         unsortedCardIds: ["card-c", "card-a", "own-x"],
+        trayOrder: ["card-c", "card-b", "card-a", "gone"],
       }),
     );
-    expect(m.trayOrder).toEqual(["card-c", "card-a", "card-b", "own-x"]);
+    expect(m.trayOrder).toEqual(["card-c", "card-b", "card-a", "own-x"]);
   });
 
   it("PERM-08: without randomisation the tray rank is the admin order", () => {

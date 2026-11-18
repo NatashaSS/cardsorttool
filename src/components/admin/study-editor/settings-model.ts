@@ -74,7 +74,7 @@ export const SETTINGS_META: SettingMeta[] = [
 export type SettingsContext = {
   sortType: SortType;
   groupMode: GroupMode;
-  settings: Pick<StudySettings, "allowParticipantCards">;
+  settings: Pick<StudySettings, "allowParticipantCards" | "allowRenameGroups">;
 };
 
 /** Whether a setting has any effect for this sort type / group mode (DESIGN §5). */
@@ -86,8 +86,10 @@ export function isSettingApplicable(key: SettingKey, ctx: SettingsContext): bool
   switch (key) {
     case "allowEditOwnCards":
       return ctx.settings.allowParticipantCards;
-    case "allowRenameGroups":
     case "requireGroupNames":
+      // Naming can only be required when participants are allowed to name groups (PERM-06).
+      return (ownGroups || openFixed) && ctx.settings.allowRenameGroups;
+    case "allowRenameGroups":
     case "allowEmptyGroups":
       // Closed sorts only have predefined groups, which participants never rename and which
       // may always be empty.

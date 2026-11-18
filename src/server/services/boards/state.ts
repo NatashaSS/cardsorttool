@@ -99,6 +99,7 @@ export type BoardSnapshot = {
   cards: CardDTO[];
   groups: GroupDTO[];
   unsortedCardIds: string[];
+  trayOrder: string[];
 };
 
 /** Current cards/groups/tray of a board. */
@@ -163,6 +164,7 @@ export function snapshot(q: Q, board: BoardRow, study: StudyRow): BoardSnapshot 
       cardIds: byGroup.get(g.id) ?? [],
     })),
     unsortedCardIds: trayOrder.filter((id) => !placed.has(id)),
+    trayOrder,
   };
 }
 
@@ -190,5 +192,6 @@ export function buildBoardState(q: Q, board: BoardRow): BoardStateDTO {
     cards: snap.cards,
     groups: snap.groups,
     unsortedCardIds: snap.unsortedCardIds,
+    trayOrder: snap.trayOrder,
   };
 }

@@ -99,6 +99,11 @@ export type BoardStateDTO = {
   groups: GroupDTO[];
   /** Ordered ids of cards in the unsorted tray. */
   unsortedCardIds: string[];
+  /**
+   * Fixed tray ranking of ALL cards on the board (board.cardOrder, then participant cards by
+   * creation). A card returned to the tray goes back to its rank (the server ignores toIndex).
+   */
+  trayOrder: string[];
 };
 
 /** POST /api/boards/[token]/ops → */

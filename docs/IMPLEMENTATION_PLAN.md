@@ -246,8 +246,10 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 - **Develops against:** the admin input schemas and `StudyDetailDTO`; C is merged, so it can call
   the real API. Disable "open" as a sort type while predefined groups exist (the server rejects it).
 
-> **Progress:** E, C, D, F2, A and G are merged (236 unit/integration + 20 e2e tests passing).
-> Remaining in Wave 1: F1.
+> **Progress: Wave 1 complete.** All streams merged; integration checkpoint 1 passed
+> (`tests/e2e/journey.spec.ts`: admin publishes via the API, participant enters, sorts, reloads,
+> completes; board frozen). 298 unit/integration + 34 e2e tests passing. Coordinator follow-ups
+> at merge: `trayOrder` added to `BoardStateDTO`; PERM-06 now only applies when renaming is allowed.
 
 ### Integration checkpoint 1 (coordinator)
 

@@ -386,6 +386,25 @@ Matches the mockup:
   keyboard sensor enabled [BRD-03].
 - Desktop only; below 1024 px a notice is shown [BRD-01].
 
+Implementation (`src/components/board/`):
+
+- `Board` props: `{ initialState: BoardStateDTO; readOnly?: boolean; mode?: "participant" | "admin" }`.
+  `readOnly` creates no API client/save queue and renders no editing controls; `mode="admin"`
+  hides the completion button and participant banners and doesn't store the resume token. The
+  admin read-only view (RES-02) renders `<Board initialState={…} readOnly mode="admin" />`.
+- `board-reducer.ts` mirrors the server's op semantics exactly (a parity test replays random op
+  sequences against the real service); `BoardStateDTO.trayOrder` gives it the server's fixed tray
+  ranking, so cards return to the tray at their exact rank and the tray doesn't reflow on hover.
+- `save-queue.ts`: one op in flight; network/5xx/429 retried with backoff 0.5 s → 10 s cap;
+  `409 stale_revision` / other 4xx → refetch, drop the queue (incl. ops queued meanwhile), notice;
+  `board_completed` / `study_not_live` → refetch into read-only. `flush()` resolves `false` if the
+  queue was dropped, and completion then stops so the participant can review. A `beforeunload`
+  warning shows while ops are pending.
+- New participant groups start with an empty name and focused input ("Name this group"); if
+  renaming is off they're created as "Group N". Own-card edit/delete use small dialogs (delete
+  confirms). "+ Add card" disappears at `LIMITS.maxParticipantCards`.
+- The board root exposes `data-hydrated="true"` after mount (used by e2e tests).
+
 ---
 
 ## 11. Analysis

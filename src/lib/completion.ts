@@ -50,7 +50,8 @@ export function getCompletionBlockers(state: CompletionState): CompletionBlocker
 
   const ownGroups = groups.filter((g) => g.kind !== "predefined");
 
-  if (settings.requireGroupNames && study.sortType !== "closed") {
+  // Naming is only required when participants can actually rename groups (PERM-03/06).
+  if (settings.requireGroupNames && settings.allowRenameGroups && study.sortType !== "closed") {
     const unnamed = ownGroups.filter((g) => g.cardIds.length > 0 && isDefaultGroupName(g.name));
     if (unnamed.length > 0) {
       blockers.push({

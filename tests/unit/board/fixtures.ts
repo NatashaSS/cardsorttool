@@ -62,5 +62,7 @@ export function boardState(
     groups: [],
     unsortedCardIds: [],
     ...rest,
+    // Default ranking: DTO card order (what the server does when PERM-08 is off).
+    trayOrder: rest.trayOrder ?? (rest.cards ?? []).map((c) => c.id),
   };
 }
