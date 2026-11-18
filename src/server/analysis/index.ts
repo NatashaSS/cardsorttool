@@ -1,42 +1,26 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- stub signatures; remove this line when implementing */
 // Stream E — pure analysis functions (ANL-01..06). No DB, no I/O. See DESIGN §11.
-import type {
-  AnalysisInput,
-  AnalysisResult,
-  Dendrogram,
-  GroupNameStat,
-  ParticipantCardRow,
-  PlacementMatrix,
-  SimilarityMatrix,
-} from "@/lib/api-types";
+// Must stay importable from plain Node (scripts/tests): no "server-only" here.
+import type { AnalysisInput, AnalysisResult } from "@/lib/api-types";
 import type { SortType } from "@/lib/types";
-import { notImplemented } from "../not-implemented";
+import { clusterAverageLinkage } from "./cluster";
+import { groupNameStats, participantCardRows } from "./group-names";
+import { placementMatrix } from "./placement";
+import { similarityMatrix } from "./similarity";
 
-/** ANL-01: cardIds in input.cards order. */
-export function similarityMatrix(input: AnalysisInput): SimilarityMatrix {
-  return notImplemented("similarityMatrix");
-}
+export { similarityMatrix } from "./similarity";
+export { placementMatrix } from "./placement";
+export { clusterAverageLinkage } from "./cluster";
+export { groupNameStats, normalizeGroupName, participantCardRows } from "./group-names";
 
-/** ANL-02: closed/hybrid only. Columns: predefined groups, "Other" (hybrid), "Unsorted". */
-export function placementMatrix(input: AnalysisInput, sortType: SortType): PlacementMatrix {
-  return notImplemented("placementMatrix");
-}
-
-/** ANL-03: average linkage on distance = 1 − ratio (null ratio → distance 1). Deterministic. */
-export function clusterAverageLinkage(similarity: SimilarityMatrix): Dendrogram {
-  return notImplemented("clusterAverageLinkage");
-}
-
-/** ANL-04: participant-created (and placeholder) group names, normalised. */
-export function groupNameStats(input: AnalysisInput): GroupNameStat[] {
-  return notImplemented("groupNameStats");
-}
-
-/** ANL-05 */
-export function participantCardRows(input: AnalysisInput): ParticipantCardRow[] {
-  return notImplemented("participantCardRows");
-}
-
+/** All analyses for one study. placement: null for open sorts; groupNames: [] for closed. */
 export function computeAnalysis(input: AnalysisInput, sortType: SortType): AnalysisResult {
-  return notImplemented("computeAnalysis");
+  const similarity = similarityMatrix(input);
+  return {
+    n: input.boards.length,
+    similarity,
+    placement: sortType === "open" ? null : placementMatrix(input, sortType),
+    dendrogram: clusterAverageLinkage(similarity),
+    groupNames: sortType === "closed" ? [] : groupNameStats(input),
+    participantCards: participantCardRows(input),
+  };
 }
