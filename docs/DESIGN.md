@@ -367,6 +367,24 @@ included board the mapping `cardId → groupId | null`.
 - **Participant cards** [ANL-05]: listed separately; excluded from matrices because each exists on
   only one board.
 
+Implementation details (`src/server/analysis/`):
+
+- **Clustering tie-breaking:** UPGMA on `d = 1 − ratio` (null → 1), symmetrised as
+  `(d_ij + d_ji) / 2`. Each step merges the closest pair of active clusters; distances within
+  `1e-9` are equal, and ties go to the lexicographically smallest
+  `(min(minIndex A, minIndex B), max(minIndex A, minIndex B))`, where a cluster's `minIndex` is the
+  smallest original position (in `cardIds`) among its cards. In a merged node the left child is
+  the cluster with the smaller `minIndex`; `leafOrder` is the left-to-right leaf traversal. Merge
+  distances are clamped to be ≥ their children's (monotone tree). Lance–Williams updates, O(n³).
+- **Placement matrix:** a placement counts in a group column when its `groupId` is a predefined
+  group; any other placement goes to "Other" in hybrid sorts and is ignored in closed sorts.
+- **Group names:** only placements of predefined cards into participant/placeholder groups are
+  counted (so groups holding no predefined cards don't appear); empty names are skipped; default
+  placeholder names such as "Group 1" are currently included. `displayName` = most common trimmed
+  spelling, counted once per (board, group); ties by character code. Stats sorted by `boardCount`
+  desc, then normalised name.
+- **Similarity diagonal:** `ratio[i][i]` = 1 if the card was ever sorted, else null.
+
 Default input set: completed, non-excluded boards; optional toggle to include in-progress
 boards. The UI always shows `n`.
 
