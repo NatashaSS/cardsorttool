@@ -68,7 +68,7 @@ mode are hidden in the UI and ignored by the server (see the matrix in DESIGN.md
 | PERM-04 | M | **Participants may delete groups** (default on). | Applies to participant-created groups only (not fixed-mode placeholders, not predefined). Deleting a group moves its cards back to the unsorted tray (with a confirmation if the group is non-empty). |
 | PERM-05 | M | **All cards must be sorted before completing** (default off). | When on, "Complete" is disabled while any card (predefined or participant-created) is in the unsorted tray, and the server rejects completion. |
 | PERM-06 | M | **Groups must be named before completing** (default on; open/hybrid only). | When on, completion is blocked while any non-empty participant group has an empty or default name. |
-| PERM-07 | S | **Empty groups are allowed on completion** (default on). | When off, completion is blocked while any participant-created group is empty. |
+| PERM-07 | S | **Empty groups are allowed on completion** (default on). | When off, completion is blocked while any participant-created or placeholder group is empty. Predefined groups may always be empty. |
 | PERM-08 | M | **Randomise card order** (default on). | When on, each board's unsorted tray order is shuffled once at board creation and then stays stable for that board. When off, the admin's order is used. |
 | PERM-09 | S | **Show card descriptions** (default on). | When on, cards with a description show it on hover/focus. |
 

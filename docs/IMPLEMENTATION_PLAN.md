@@ -74,7 +74,14 @@ sequentially. Wave 1 has 7 streams; a sensible default is **3–4 concurrent age
 
 ---
 
-## 3. Wave 0 — Foundation & contracts (coordinator, sequential)
+## 3. Wave 0 — Foundation & contracts (coordinator, sequential) — ✅ done
+
+> **Status:** complete. Deviations from the original list below: Cache Components is disabled
+> (pages use `dynamic = "force-dynamic"`); `scripts/hash-password.ts` was written in Wave 0 (so
+> stream A doesn't own it); `src/server/db/open.ts` holds `openDatabase`/`runMigrations` without
+> `server-only` so scripts and tests can use it; admin pages live in the `admin/(protected)` route
+> group; stub services also include `getPublicStudy`/`getBoardStateById` (D) and
+> `services/analysis-data.ts` (I).
 
 Everything other streams build against. Keep it small but **complete**: anything two streams
 would both need belongs here.
@@ -150,11 +157,12 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 
 - **Requirements:** AUTH-02, AUTH-03 (redirect behaviour), AUTH-04, AUTH-05.
 - **Owns:** `src/app/admin/login/**`, `src/app/api/admin/login/**`, `src/app/api/admin/logout/**`,
-  `src/middleware.ts`, `src/server/services/rate-limit.ts`, `scripts/hash-password.ts`,
+  `src/proxy.ts` (Next 16's renamed middleware), `src/server/services/rate-limit.ts`,
   `tests/**/auth*`.
-- **Builds:** login page + form, login/logout route handlers, middleware redirecting
-  unauthenticated `/admin/**` to login (and `401` for `/api/admin/**`), in-memory IP rate limiter,
-  hash-password CLI.
+- **Builds:** login page + form, login/logout route handlers (logout is a form POST from the admin
+  nav, then redirect to login), `proxy.ts` redirecting unauthenticated `/admin/**` (except
+  `/admin/login`) to login and returning `401` for `/api/admin/**` (except login), in-memory IP
+  rate limiter.
 - **Uses:** `src/server/session.ts`.
 
 ### C. Study service + admin API
@@ -174,11 +182,11 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
   DONE-04, DONE-05, PERM-08 (shuffle), PFLD-02/05 (server validation), NFR-03.
 - **Owns:** body of `src/server/services/boards.ts`, `src/app/api/s/**`,
   `src/app/api/boards/**`, `tests/**/boards*`.
-- **Builds:** `createBoard` (validate details with `buildParticipantSchema`, token, shuffled card
+- **Builds:** `getPublicStudy` (intro page data), `createBoard` (validate details with `buildParticipantSchema`, token, shuffled card
   order, placeholder groups for fixed mode), `getBoardState` → `BoardStateDTO`, `applyOp` for
   every `BoardOp` in one transaction (status checks, revision check, capability check via
   `getBoardCapabilities`, ownership checks, re-indexing), `completeBoard` (blockers via
-  `getCompletionBlockers`, idempotent). Perf test for NFR-03.
+  `getCompletionBlockers`, idempotent), `getBoardStateById` (for stream H). Perf test for NFR-03.
 - **Note:** tests create studies via `tests/helpers/factories.ts`, not via stream C's service.
 
 ### E. Analysis engine (pure)
@@ -207,7 +215,8 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 ### F2. Participant entry pages
 
 - **Requirements:** PART-01, PART-03 (client: local-storage resume), PFLD-02 (form), PFLD-05.
-- **Owns:** `src/app/s/[slug]/page.tsx` and siblings (not `b/**`), `src/components/entry/**`,
+- **Owns:** `src/app/s/[slug]/page.tsx` and siblings except `layout.tsx` and `b/**`,
+  `src/components/entry/**`,
   `tests/**/entry*`.
 - **Builds:** intro page, "study not accepting responses" page, participant details form
   generated from the catalogue + study config (client-side zod validation), resume prompt
@@ -217,8 +226,9 @@ Exception: a stream may fill in the **bodies** of the stub service file(s) it ow
 
 - **Requirements:** STU-01, 02, 03, 07, 08, 09, 10, 11, 12 (UI), PERM-* (settings UI with
   irrelevant settings hidden per DESIGN §5), PFLD-01, 03, 04 (UI).
-- **Owns:** `src/app/admin/page.tsx`, `src/app/admin/studies/**` (except `[id]/boards/**`,
-  `[id]/analysis/**`), `src/components/admin/study-editor/**`, `tests/**/study-editor*`.
+- **Owns:** `src/app/admin/(protected)/page.tsx`, `src/app/admin/(protected)/studies/**` (except
+  `[id]/boards/**`, `[id]/analysis/**`), `src/components/admin/study-editor/**`,
+  `tests/**/study-editor*`.
 - **Builds:** study list, create form, editor tabs (Details, Type & groups, Cards, Participant
   fields, Settings), status controls with confirmation, read-only rendering when not draft,
   copy-link button, duplicate action. Calls stream C's API.
@@ -240,7 +250,8 @@ Update docs with any reported deviations.
 - **Requirements:** RES-01..06, PART-05 (admin read-only view).
 - **Owns:** body of `src/server/services/results.ts` and `src/server/services/export.ts`,
   `src/app/api/admin/studies/[id]/boards/**`, `src/app/api/admin/studies/[id]/export/**`,
-  `src/app/admin/studies/[id]/boards/**`, `src/components/admin/results/**`, `tests/**/results*`.
+  `src/app/admin/(protected)/studies/[id]/boards/**`, `src/components/admin/results/**`,
+  `tests/**/results*`.
 - **Builds:** board list (participant columns, status filter, sorting, auto-refresh), read-only
   board page reusing F1's board with `readOnly`, exclude/include and delete, CSV exports with
   formula-injection escaping.
@@ -248,9 +259,12 @@ Update docs with any reported deviations.
 ### I. Analysis UI
 
 - **Requirements:** ANL-01..05 (presentation), ANL-07, plus the include-in-progress toggle.
-- **Owns:** `src/app/api/admin/studies/[id]/analysis/**`, `src/app/admin/studies/[id]/analysis/**`,
-  `src/components/admin/analysis/**`, `tests/**/analysis-ui*`.
-- **Builds:** analysis route (load boards → `AnalysisInput` → stream E functions), similarity
+- **Owns:** body of `src/server/services/analysis-data.ts`,
+  `src/app/api/admin/studies/[id]/analysis/**`,
+  `src/app/admin/(protected)/studies/[id]/analysis/**`, `src/components/admin/analysis/**`,
+  `tests/**/analysis-ui*`.
+- **Builds:** `loadAnalysisInput` / `getStudyAnalysis`, analysis route (load boards →
+  `AnalysisInput` → stream E functions), similarity
   heat-map (lower-triangular, dendrogram order, hover details), placement heat-map, dendrogram SVG
   with cut-off slider, group-names table, participant-cards table, `n` display, matrix CSV export.
 

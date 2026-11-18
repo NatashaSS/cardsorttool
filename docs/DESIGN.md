@@ -66,14 +66,14 @@ a single **SQLite** file. No other services are required [NFR-01].
 
 | Concern | Choice | Why |
 |---|---|---|
-| Framework | **Next.js 15+ (App Router), React, TypeScript** | One codebase and language for UI + API; easy self-hosting with `next start` |
+| Framework | **Next.js 16 (App Router, Turbopack), React 19, TypeScript** | One codebase and language for UI + API; easy self-hosting with `next start`. **Cache Components is off** (every page is request-time data); data-reading routes are `force-dynamic`. Auth redirects use `src/proxy.ts` (Next 16's renamed middleware). |
 | Database | **SQLite** via **better-sqlite3** (WAL mode) | Zero setup, single-file backups, synchronous transactions are simple and fast for this workload |
 | ORM / migrations | **Drizzle ORM + drizzle-kit** | Typed schema in TS, plain SQL migrations committed to the repo [NFR-02] |
 | Validation | **zod** | Shared schemas for client forms and server endpoints [NFR-06] |
 | Drag and drop | **dnd-kit** (`@dnd-kit/core`, `@dnd-kit/sortable`) | Best-in-class React DnD: sortable lists across containers, keyboard sensor + screen-reader announcements [BRD-02/03] |
 | Styling | **Tailwind CSS** | Fast to build the sticky-note board look |
 | Modal / UI primitives | **Radix UI** (Dialog, etc.) | Accessible modal with focus trap for the completion flow [DONE-02] |
-| Admin auth | Custom: bcrypt hash in env + signed, HTTP-only session cookie (`iron-session`) | Single admin → no user table or auth framework needed |
+| Admin auth | Custom: bcrypt hash in env + encrypted, HTTP-only session cookie (`iron-session`); `src/server/session.ts` | Single admin → no user table or auth framework needed |
 | Charts | Hand-rolled SVG / HTML-table heat-maps; clustering implemented in TS | Small, testable, no heavy chart dependency |
 | Tests | **Vitest** (unit + integration on an in-memory SQLite DB), **Playwright** (e2e) | [NFR-09] |
 
@@ -84,6 +84,8 @@ a single **SQLite** file. No other services are required [NFR-01].
   revisions). They take a `db` handle as a parameter so tests can pass an in-memory database.
 - **Analysis** (`src/server/analysis/*`) is pure functions over plain data → easy to unit test [ANL-06].
 - Client components never import from `src/server`.
+- Route handlers use the `route()` wrapper (`src/server/http.ts`), which maps `ServiceError`
+  codes (`src/server/errors.ts`) to HTTP statuses and the `{ error: { code, message } }` body.
 
 ---
 
@@ -201,7 +203,8 @@ type BuiltInFieldKey =
 - A **field catalogue** (`src/lib/participant-fields.ts`) defines each built-in field's label,
   input type, options and zod validator [PFLD-02]. The participant form and the server-side
   validator are both generated from the catalogue + the study's config.
-- Answers are stored as JSON on `board.participant`, keyed by field key.
+- Answers are stored as JSON on `board.participant`, keyed by field key. A self-described gender
+  is stored as `gender: "self_describe"` plus `genderSelfDescribe: "<text>"`.
 - The admin board list [RES-01] and CSV export [RES-05] show columns for the enabled fields.
 - Changing fields is only allowed in `draft` [STU-03], so all boards of a study share one schema.
 
@@ -214,6 +217,12 @@ type BuiltInFieldKey =
 | Route | Who | Purpose |
 |---|---|---|
 | `/admin/login` | public | Login form [AUTH-02] |
+
+All other admin pages live in the `src/app/admin/(protected)/` route group, whose layout calls
+`requireAdminPage()` (the group name doesn't appear in URLs).
+
+| Route | Who | Purpose |
+|---|---|---|
 | `/admin` | admin | Study list [STU-01] |
 | `/admin/studies/new` | admin | Create study |
 | `/admin/studies/[id]` | admin | Study editor: details, type, settings, cards, groups, participant fields, status, share link |
@@ -231,21 +240,26 @@ Participant (token-scoped; every mutating request includes `revision`):
 |---|---|
 | `POST /api/s/[slug]/boards` | Validate participant details, create a board → `{ token }` [PART-02] |
 | `GET  /api/boards/[token]` | Full board state (study config, capabilities, groups, cards, placements, revision) |
-| `POST /api/boards/[token]/ops` | Apply **one** board operation (below) → new state / revision |
-| `POST /api/boards/[token]/complete` | Complete and freeze [DONE-03/04/05] |
+| `POST /api/boards/[token]/ops` | Body `{ revision, op }`; applies **one** board operation (below) → `{ revision, lastActivityAt }` |
+| `POST /api/boards/[token]/complete` | Complete and freeze [DONE-03/04/05] → `{ status, completedAt }` |
 
 Board operations (discriminated union validated with zod):
 
 ```ts
-type BoardOp =
+type BoardOp =                                   // src/lib/schemas.ts BoardOpSchema
   | { type: 'moveCard';    cardId; toGroupId: string | null; toIndex: number } // null = tray
-  | { type: 'addGroup';    groupId?; name; index?; withCardId? }               // BRD-05/07
+  | { type: 'addGroup';    groupId; name; withCardId? }                        // BRD-05/07
   | { type: 'renameGroup'; groupId; name }
   | { type: 'deleteGroup'; groupId }
-  | { type: 'addCard';     label; description? }
+  | { type: 'addCard';     cardId; label; description? }
   | { type: 'editCard';    cardId; label; description? }
   | { type: 'deleteCard';  cardId };
 ```
+
+`groupId` in `addGroup` and `cardId` in `addCard` are **generated by the client** (nanoid) so the
+op can be applied optimistically without waiting for the server; the server validates the id
+format and rejects duplicates. New participant groups are appended after existing groups.
+Participant group names may be blank while editing; PERM-06 blocks completion instead.
 
 Admin endpoints live under `/api/admin/**` (studies CRUD, cards, groups, status transitions, board
 exclude/delete, CSV export, analysis data) and all require the session [AUTH-03].
@@ -267,7 +281,7 @@ Goal: every change is persisted immediately without the board ever feeling slow 
      board/study) [SAVE-04];
    - applies it (re-indexing positions in the affected groups), increments `revision`, updates
      `last_activity_at` [SAVE-05];
-   - returns the new revision.
+   - returns `{ revision, lastActivityAt }`.
 4. On network/5xx failure the client retries with exponential backoff and shows the status
    indicator. On `409 stale` it refetches the board, replaces local state and shows a notice.
    On `4xx` validation errors it rolls back to the server state.
@@ -360,7 +374,8 @@ boards. The UI always shows `n`.
 
 ## 12. Security
 
-- Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`); session cookie is
+- Admin password stored only as a bcrypt hash in env (`ADMIN_PASSWORD_HASH`; in `.env` files each
+  `$` is escaped as `\$` because Next.js expands variables there — the server accepts both forms); session cookie is
   signed/encrypted with `SESSION_SECRET`, HTTP-only, `SameSite=Lax`, `Secure` in production
   [AUTH-01..04]. Login rate-limited in memory per IP [AUTH-05].
 - Participant access is capability-based: the board token *is* the credential; tokens have
@@ -375,6 +390,7 @@ boards. The UI always shows `n`.
 ## 13. Deployment (self-hosted)
 
 - `npm ci && npm run build`, then `npm run db:migrate && npm run start` (port configurable).
+- `npm run hash-password -- '<password>'` prints the `ADMIN_PASSWORD_HASH` line for `.env`.
 - Env: `DATABASE_PATH` (e.g. `/var/lib/cardsort/cardsort.db`), `ADMIN_EMAIL`,
   `ADMIN_PASSWORD_HASH`, `SESSION_SECRET`, `PUBLIC_BASE_URL` (for share links).
 - Run under systemd (or a Docker container with the DB directory as a volume) behind
