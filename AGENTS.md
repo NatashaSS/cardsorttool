@@ -20,6 +20,12 @@ placement matrix and dendrogram.
   and acceptance criteria. **This defines "done".**
 - `docs/DESIGN.md` — architecture, data model, permission matrix, API, auto-save protocol,
   analysis algorithms.
+- `docs/IMPLEMENTATION_PLAN.md` — build waves, parallel workstreams, file ownership per stream,
+  and the rules for sub-agents.
+
+**Keep the docs current.** Whenever behaviour, architecture or requirements change, update
+`docs/REQUIREMENTS.md` and `docs/DESIGN.md` in the same change. (When working as a parallel
+stream sub-agent, report doc changes to the coordinator instead — see the plan §2.)
 
 ## Tech stack
 
@@ -30,7 +36,7 @@ dnd-kit · Tailwind CSS · Radix UI · iron-session · Vitest · Playwright. Nod
 
 ```
 AGENTS.md               this file
-docs/                   REQUIREMENTS.md, DESIGN.md
+docs/                   REQUIREMENTS.md, DESIGN.md, IMPLEMENTATION_PLAN.md
 src/
   app/                  Next.js routes (pages + route handlers)
     admin/              admin UI (login, studies, boards, analysis)

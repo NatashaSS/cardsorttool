@@ -385,6 +385,9 @@ boards. The UI always shows `n`.
 
 ## 14. Delivery phases
 
+Functional phases are below. The executable build order — waves of parallel workstreams with
+file ownership — is in [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md).
+
 | Phase | Scope | Requirements |
 |---|---|---|
 | 1 | Scaffold: Next.js, Tailwind, Drizzle + SQLite, migrations, test setup, admin login | NFR-01/02/09, AUTH-* |
