@@ -293,7 +293,8 @@ Update docs with any reported deviations.
   various PERM combinations; frozen-board and closed-study checks; multi-tab conflict test;
   `npm run req:coverage` reaching zero uncovered **M** requirements (or a list of justified gaps).
 
-> **Progress:** H merged (with coordinator follow-up: admin-mode markers in the shared Board).
+> **Progress:** H and I merged (341 unit/integration + 45 e2e tests). Coordinator follow-up for H:
+> admin-mode markers in the shared Board. Remaining in Wave 2: J.
 
 ### Integration checkpoint 2
 

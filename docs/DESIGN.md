@@ -281,7 +281,8 @@ Admin endpoints live under `/api/admin/**` and all require the session [AUTH-03]
 | `GET …/[id]/boards` | `BoardSummaryDTO[]` (last activity first) [RES-01] |
 | `PATCH/DELETE …/[id]/boards/[boardId]` | `{ excluded }` → 204 / delete → 204 [RES-03/04] |
 | `GET …/[id]/export/placements.csv` · `…/participants.csv` | CSV downloads [RES-05] |
-| `…/[id]/analysis/**` | Analysis data and matrix CSVs (stream I) |
+| `GET …/[id]/analysis[?includeInProgress=1]` | `AnalysisView` = `{ study, includeInProgress, boardCounts: {completed, inProgress, excluded}, cards, groups, result: AnalysisResult }` |
+| `GET …/[id]/analysis/similarity.csv` · `…/placement.csv` | Matrix CSVs (placement: closed/hybrid only, else 422) [ANL-07] |
 
 Study config normalisation (service layer): `groupMode: "fixed"` is only valid for open sorts and
 needs `fixedGroupCount` 1–30; changing sort type away from open resets the mode to `unbounded`;
@@ -451,6 +452,19 @@ Implementation details (`src/server/analysis/`):
   spelling, counted once per (board, group); ties by character code. Stats sorted by `boardCount`
   desc, then normalised name.
 - **Similarity diagonal:** `ratio[i][i]` = 1 if the card was ever sorted, else null.
+
+Analysis UI (`src/components/admin/analysis/`, data via `src/server/services/analysis-data.ts`,
+six set-based queries regardless of board count):
+
+- Similarity heat-map: lower triangle without the diagonal, dendrogram leaf order; sequential
+  scale `#e6eefc` → `accent`, black/white text by contrast; numbers in cells up to ~60 cards,
+  beyond that in the tooltip / active cell's `aria-label`. One tab stop per matrix, arrow keys move.
+- Dendrogram: cut-off slider in similarity % (default 50%); clusters = maximal subtrees with merge
+  distance ≤ 1 − cut-off, shown as alternating bands labelled C1…Cn plus a cluster list.
+- Placement matrix: "top group" = highest count among group columns and Other (ties all marked),
+  bold + outlined + a text column.
+- CSVs: similarity = full symmetric matrix in leaf order, % to one decimal, blank when never both
+  sorted; placement = admin card order, groups, Other (hybrid), Unsorted. Header cell states `n`.
 
 Default input set: completed, non-excluded boards; optional toggle to include in-progress
 boards. The UI always shows `n`.
