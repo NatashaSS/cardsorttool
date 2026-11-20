@@ -293,8 +293,11 @@ Update docs with any reported deviations.
   various PERM combinations; frozen-board and closed-study checks; multi-tab conflict test;
   `npm run req:coverage` reaching zero uncovered **M** requirements (or a list of justified gaps).
 
-> **Progress:** H and I merged (341 unit/integration + 45 e2e tests). Coordinator follow-up for H:
-> admin-mode markers in the shared Board. Remaining in Wave 2: J.
+> **Progress: Wave 2 complete.** H, I and J merged; checkpoint 2 met: `req:coverage --strict`
+> reports 66/66 MUST and 11/11 SHOULD covered; 341 unit/integration + 57 e2e (Chromium) tests
+> pass. CI (`.github/workflows/ci.yml`) adds Firefox/WebKit via `E2E_ALL_BROWSERS=1` — not yet
+> run (only Chromium is available in the dev container). Coordinator follow-ups: admin-mode board
+> markers (H); Playwright browser projects + Firefox-safe clipboard permissions (J).
 
 ### Integration checkpoint 2
 

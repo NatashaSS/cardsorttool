@@ -27,8 +27,12 @@ test.beforeEach(async ({ page }) => {
 test("STU-01 STU-02 STU-03 STU-07 STU-08 STU-09 STU-10 STU-11 PFLD-01 PFLD-03 PFLD-04 PERM-01 PERM-02: build, publish, lock, close and reopen a closed study", async ({
   page,
   context,
+  browserName,
 }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  // Firefox/WebKit don't support these permission names; the test accepts the copy fallback.
+  if (browserName === "chromium") {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  }
   const title = `Navigation ${unique()}`;
   await createStudy(page, title, "Closed");
   await expect(page.getByTestId("status-badge")).toHaveText("Draft");

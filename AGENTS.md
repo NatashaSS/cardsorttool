@@ -2,8 +2,8 @@
 
 Guidance for AI coding agents (and humans) working in this repository.
 
-> **Status: Wave 0 (foundation) complete.** Shared contracts, schema, rules, test setup and UI
-> shell exist; feature streams (see `docs/IMPLEMENTATION_PLAN.md`) fill in the stubs.
+> **Status: v1 feature-complete (Waves 0–2 done).** Every MUST and SHOULD requirement has tests;
+> remaining work is Wave 3 polish/hardening (see `docs/IMPLEMENTATION_PLAN.md`).
 
 ## What this app is
 
@@ -79,6 +79,7 @@ scripts/                  migrate, seed, hash-password (plain JS, also used in t
 Dockerfile, docker-compose.yml, .dockerignore   production container (standalone Next build)
 src/instrumentation.ts    runs DB migrations on server start when AUTO_MIGRATE=1 (set in the image)
 tests/
+  e2e/journey-helpers.ts  build/publish studies + join as participant, for cross-stream journeys
   helpers/                createTestDb(), factories (makeStudy/makeCard/…), rulesConfig()
   unit/                   Vitest unit tests (pure functions)
   integration/            Vitest tests of services / route handlers on in-memory SQLite
@@ -118,6 +119,12 @@ Environment variables (see `.env.example`): `DATABASE_PATH`, `ADMIN_EMAIL`, `ADM
   also accepts the raw hash or `\$`-escaped form.
 - SQLite is used in **both** development and production — never add another database.
 - e2e defaults to port 3100 / `data/e2e.db`; set `E2E_PORT=31xx` to run another suite in parallel.
+- `E2E_ALL_BROWSERS=1` adds Firefox and WebKit projects (needs `npx playwright install firefox webkit`).
+- CI: `.github/workflows/ci.yml` runs lint, typecheck, unit/integration, `req:coverage --strict`,
+  e2e in all three browsers, and a `docker build`.
+- e2e gotcha: Radix Dialog and dnd-kit's keyboard sensor attach listeners in a `setTimeout`, so
+  input sent immediately after a modal opens or a card is picked up can be lost. Wait for the
+  dialog to be visible / retry with `expect(...).toPass()` instead of acting instantly.
 - Playwright uses the pre-installed Chromium; on a new machine run `npx playwright install chromium`.
 
 ## Conventions
