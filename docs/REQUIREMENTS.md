@@ -134,7 +134,7 @@ mode are hidden in the UI and ignored by the server (see the matrix in DESIGN.md
 | RES-02 | M | The admin can open any board in a read-only view. | Shows the board as the participant sees/saw it, including participant-created groups and cards (clearly marked). |
 | RES-03 | M | The admin can exclude a board from analysis (e.g. a test run) and re-include it. | Excluded boards are greyed out in the list and ignored by all analysis (ANL). |
 | RES-04 | M | The admin can delete a board. | Requires confirmation; removes the board and its placements. |
-| RES-05 | M | The admin can export results as CSV. | One row per board × card: board id, status, participant fields, card label, card origin (predefined / participant), group name, group origin, position. Plus a separate participants CSV (one row per board). |
+| RES-05 | M | The admin can export results as CSV. | One row per board × card: board id, status, excluded, dates, participant fields, card label, card origin (predefined / participant), group name, group origin, position (1-based rank in its group; empty when unsorted). Plus a separate participants CSV (one row per board). UTF-8 with BOM, CRLF, RFC 4180 quoting. |
 | RES-06 | S | The board list refreshes automatically. | Polls every 15 s while the page is open. |
 
 ## 10. Analysis (`ANL`)

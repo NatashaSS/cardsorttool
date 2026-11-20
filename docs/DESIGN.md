@@ -278,7 +278,10 @@ Admin endpoints live under `/api/admin/**` and all require the session [AUTH-03]
 | `POST /api/admin/studies/[id]/cards` · `PATCH/DELETE …/cards/[cardId]` | Predefined cards (PATCH takes a full card body) |
 | `POST …/cards/reorder` · `POST …/cards/bulk` | `{ ids }` exact permutation / `{ text }` paste |
 | `POST …/groups` · `PATCH/DELETE …/groups/[groupId]` · `POST …/groups/reorder` | Predefined groups (closed/hybrid only) |
-| `…/[id]/boards/**`, `…/[id]/export/**`, `…/[id]/analysis/**` | Results, CSV, analysis (streams H, I) |
+| `GET …/[id]/boards` | `BoardSummaryDTO[]` (last activity first) [RES-01] |
+| `PATCH/DELETE …/[id]/boards/[boardId]` | `{ excluded }` → 204 / delete → 204 [RES-03/04] |
+| `GET …/[id]/export/placements.csv` · `…/participants.csv` | CSV downloads [RES-05] |
+| `…/[id]/analysis/**` | Analysis data and matrix CSVs (stream I) |
 
 Study config normalisation (service layer): `groupMode: "fixed"` is only valid for open sorts and
 needs `fixedGroupCount` 1–30; changing sort type away from open resets the mode to `unbounded`;
@@ -391,7 +394,11 @@ Implementation (`src/components/board/`):
 - `Board` props: `{ initialState: BoardStateDTO; readOnly?: boolean; mode?: "participant" | "admin" }`.
   `readOnly` creates no API client/save queue and renders no editing controls; `mode="admin"`
   hides the completion button and participant banners and doesn't store the resume token. The
-  admin read-only view (RES-02) renders `<Board initialState={…} readOnly mode="admin" />`.
+  admin read-only view (RES-02) renders `<Board initialState={…} readOnly mode="admin" />`; in
+  admin mode (`BoardModeContext`) participant cards read "Participant card", participant groups
+  get an "Added by participant" badge, and the root is a `<div>` (no nested `<main>`).
+- The admin board list polls every 15 s only while the tab is visible (catching up on return)
+  and has a manual Refresh button [RES-06].
 - `board-reducer.ts` mirrors the server's op semantics exactly (a parity test replays random op
   sequences against the real service); `BoardStateDTO.trayOrder` gives it the server's fixed tray
   ranking, so cards return to the tray at their exact rank and the tray doesn't reflow on hover.
@@ -468,8 +475,8 @@ boards. The UI always shows `n`.
   ≥ 128 bits of entropy; slugs are random too [PART-04, STU-11].
 - All mutations validated server-side with zod and the capabilities matrix [SAVE-04, NFR-06].
 - React escaping only; no `dangerouslySetInnerHTML` with user content [NFR-05].
-- CSV export escapes cells and prefixes values starting with `= + - @` to avoid
-  spreadsheet formula injection [RES-05].
+- CSV export escapes cells (RFC 4180) and prefixes values starting with `=`, `+`, `-`, `@`, tab or
+  CR with `'` to avoid spreadsheet formula injection (so `-5` exports as `'-5`) [RES-05, NFR-05].
 
 ---
 

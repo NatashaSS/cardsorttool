@@ -11,36 +11,6 @@ import { BoardStatusBadge, DateTime, ExcludedTag } from "./BoardStatusBadge";
 import { SortedProgress } from "./BoardsList";
 import { answerText, formatDateTime, participantColumns } from "./format";
 
-const SAFE_ID = /^[A-Za-z0-9_-]+$/;
-
-/**
- * The shared Board doesn't mark participant groups, so tag their columns (located by the
- * `data-group-id` attribute the Board renders) with a CSS label. Ids are filtered to a safe
- * character set before going into the selector.
- */
-function participantGroupStyles(state: BoardStateDTO): string {
-  const ids = state.groups
-    .filter((g) => g.kind === "participant" && SAFE_ID.test(g.id))
-    .map((g) => `[data-testid="admin-board"] section[data-group-id="${g.id}"]`);
-  if (ids.length === 0) return "";
-  return `${ids.join(",\n")} {
-  border-radius: 0.5rem;
-  outline: 2px dashed color-mix(in srgb, var(--color-accent) 45%, transparent);
-  outline-offset: 4px;
-}
-${ids.map((s) => `${s}::before`).join(",\n")} {
-  content: "Added by participant";
-  align-self: flex-start;
-  margin-bottom: 0.25rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  color: var(--color-accent);
-  padding: 0.0625rem 0.5rem;
-  font-size: 11px;
-  font-weight: 500;
-}`;
-}
-
 export function AdminBoardView({
   studyId,
   studyTitle,
@@ -58,7 +28,6 @@ export function AdminBoardView({
   const fields = participantColumns(state.study.participantFields);
   const ownGroups = state.groups.filter((g) => g.kind === "participant").length;
   const ownCards = state.cards.filter((c) => c.origin === "participant").length;
-  const css = participantGroupStyles(state);
 
   async function toggleExcluded() {
     setBusy(true);
@@ -168,7 +137,6 @@ export function AdminBoardView({
         Read-only view — this is the board as the participant {state.board.status === "completed" ? "submitted" : "currently has"} it.
       </Notice>
 
-      {css && <style>{css}</style>}
       <div
         data-testid="admin-board"
         className="-mx-6 rounded-lg border border-line bg-canvas"

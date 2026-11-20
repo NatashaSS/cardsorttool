@@ -293,6 +293,8 @@ Update docs with any reported deviations.
   various PERM combinations; frozen-board and closed-study checks; multi-tab conflict test;
   `npm run req:coverage` reaching zero uncovered **M** requirements (or a list of justified gaps).
 
+> **Progress:** H merged (with coordinator follow-up: admin-mode markers in the shared Board).
+
 ### Integration checkpoint 2
 
 All three merged; `npm run req:coverage` shows every **M** requirement covered; full suite green.

@@ -8,6 +8,7 @@ import type { CardDTO, GroupDTO } from "@/lib/api-types";
 import { LIMITS } from "@/lib/types";
 import { cn } from "@/components/ui/cn";
 import { SortableCard, StaticCard, type CardControls } from "./Card";
+import { useBoardMode } from "./mode";
 
 export type GroupColumnProps = {
   group: GroupDTO;
@@ -33,13 +34,24 @@ export function GroupColumn(props: GroupColumnProps) {
   });
   const count = group.cardIds.length;
   const cards = group.cardIds.map((id) => cardsById.get(id)).filter((c): c is CardDTO => !!c);
+  // In the admin view, mark groups the participant created themselves (RES-02).
+  const markOwn = useBoardMode() === "admin" && group.kind === "participant";
 
   return (
     <section
       aria-label={`Group ${group.name || "(unnamed)"}`}
       data-group-id={group.id}
-      className="flex w-60 shrink-0 flex-col"
+      data-group-kind={group.kind}
+      className={cn(
+        "flex w-60 shrink-0 flex-col",
+        markOwn && "rounded-lg outline-2 outline-offset-4 outline-accent/40 outline-dashed",
+      )}
     >
+      {markOwn && (
+        <span className="mb-1 self-start rounded-full bg-accent/10 px-2 py-px text-[11px] font-medium text-accent">
+          Added by participant
+        </span>
+      )}
       <div className="mb-1.5 flex min-h-9 items-center gap-1.5">
         <GroupName {...props} />
         <span

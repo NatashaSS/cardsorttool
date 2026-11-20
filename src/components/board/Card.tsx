@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import type { CardDTO } from "@/lib/api-types";
 import { cn } from "@/components/ui/cn";
+import { useBoardMode } from "./mode";
 
 export type CardControls = {
   /** PERM-02: shown only for the participant's own cards when allowed. */
@@ -55,12 +56,13 @@ export function CardFace({
 }
 
 function CardText({ card }: { card: CardDTO }) {
+  const mode = useBoardMode();
   return (
     <>
       <span>{card.label}</span>
       {card.origin === "participant" && (
         <span className="mt-1 block text-[11px] font-medium tracking-wide text-muted uppercase">
-          Your card
+          {mode === "admin" ? "Participant card" : "Your card"}
         </span>
       )}
     </>

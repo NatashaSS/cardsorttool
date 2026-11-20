@@ -156,12 +156,13 @@ test("RES-02 PART-05: read-only board view with participant details and marked p
   await expect(page.getByTestId("participant-additions")).toContainText("1 group");
   const ownGroup = page.getByRole("region", { name: "Group Odds and ends" });
   await expect(ownGroup).toContainText("My idea");
-  const marker = await ownGroup.evaluate((el) => getComputedStyle(el, "::before").content);
-  expect(marker).toContain("Added by participant");
-  const predefined = await page
-    .getByRole("region", { name: "Group Money" })
-    .evaluate((el) => getComputedStyle(el, "::before").content);
-  expect(predefined).toBe("none");
+  await expect(ownGroup).toContainText("Added by participant");
+  await expect(ownGroup).toContainText("Participant card");
+  await expect(page.getByRole("region", { name: "Group Money" })).not.toContainText(
+    "Added by participant",
+  );
+  // No nested <main> landmarks inside the admin layout.
+  await expect(page.locator("main main")).toHaveCount(0);
   // No editing controls.
   await expect(page.getByRole("button", { name: /New group/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Add card/ })).toHaveCount(0);

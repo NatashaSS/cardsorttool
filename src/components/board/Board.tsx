@@ -41,6 +41,7 @@ import { CompletionControl } from "./Completion";
 import { CardFormDialog, ConfirmDialog, type CardFormValue, type ConfirmRequest } from "./dialogs";
 import { GroupColumn } from "./GroupColumn";
 import { NEW_GROUP_ID, NewGroupColumn, TRAY_ID, Tray } from "./Tray";
+import { BoardModeContext } from "./mode";
 import { useBoard } from "./use-board";
 
 export type BoardProps = {
@@ -66,6 +67,9 @@ function itemsOf(model: BoardModel, container: string): string[] {
 }
 
 export function Board({ initialState, readOnly = false, mode = "participant" }: BoardProps) {
+  // The admin view sits inside the admin layout's <main>; avoid nesting landmarks.
+  // (Typed as "main": both elements take the same HTMLElement ref and props used here.)
+  const Root = (mode === "admin" ? "div" : "main") as "main";
   const controller = useBoard(initialState, { readOnly });
   const { meta, model, save, notice, dispatch } = controller;
   const { study, board } = meta;
@@ -321,112 +325,118 @@ export function Board({ initialState, readOnly = false, mode = "participant" }: 
         </Notice>
       </div>
 
-      <main
-        ref={mainRef}
-        className="mx-auto hidden w-full max-w-[1680px] px-8 py-6 lg:block"
-        data-testid="board"
-      >
-        <header className="grid grid-cols-[15rem_1fr_15rem] items-start gap-6">
-          <div>
-            <ParticipantNote lines={lines} />
-          </div>
-          <div className="pt-2 text-center">
-            <h1 className="sr-only">{study.title}</h1>
-            <p
-              className="mx-auto max-w-2xl text-base whitespace-pre-line text-ink"
-              data-testid="instructions"
-            >
-              {study.instructions.trim() || "Sort the cards into groups that make sense to you."}
-            </p>
-          </div>
-          <div>{editable && <SaveIndicator save={save} onRetry={controller.retry} />}</div>
-        </header>
-
-        {readOnlyBanner && (
-          <Notice tone={readOnlyBanner.tone} className="mx-auto mt-6 max-w-2xl text-center">
-            <span data-testid="readonly-banner">{readOnlyBanner.text}</span>
-          </Notice>
-        )}
-        {notice && !readOnlyBanner && (
-          <div
-            className="mx-auto mt-6 flex max-w-2xl items-center gap-3 rounded-md border border-amber-400/50 bg-amber-50 px-4 py-3 text-sm"
-            role="status"
-            data-testid="board-notice"
-          >
-            <span className="flex-1">{notice.message}</span>
-            <Button size="sm" variant="ghost" onClick={controller.dismissNotice}>
-              Dismiss
-            </Button>
-          </div>
-        )}
-
-        <DndContext
-          id={dndId}
-          sensors={editable ? sensors : undefined}
-          collisionDetection={collisionDetection}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          onDragEnd={onDragEnd}
-          onDragCancel={endDrag}
-          accessibility={{
-            announcements,
-            screenReaderInstructions: {
-              draggable:
-                "To pick up a card, press Space or Enter. Use the arrow keys to move it between groups and the unsorted cards. Press Space or Enter again to drop it, or Escape to cancel.",
-            },
-          }}
+      <BoardModeContext.Provider value={mode}>
+        <Root
+          ref={mainRef}
+          className="mx-auto hidden w-full max-w-[1680px] px-8 py-6 lg:block"
+          data-testid="board"
         >
-          <div className="mt-8 flex flex-wrap items-start gap-6" data-testid="groups">
-            {view.groups.map((group) => (
-              <GroupColumn
-                key={group.id}
-                group={group}
-                cardsById={cardsById}
-                editable={editable}
-                canRename={editable && canRenameGroup(ctx, group.kind)}
-                canDelete={editable && canDeleteGroup(ctx, group.kind)}
-                showDescriptions={showDescriptions}
-                autoFocusName={focusGroupId === group.id}
-                onAutoFocused={clearFocusGroup}
-                onRename={renameGroup}
-                onDelete={deleteGroup}
-                cardControls={cardControls}
+          <header className="grid grid-cols-[15rem_1fr_15rem] items-start gap-6">
+            <div>
+              <ParticipantNote lines={lines} />
+            </div>
+            <div className="pt-2 text-center">
+              <h1 className="sr-only">{study.title}</h1>
+              <p
+                className="mx-auto max-w-2xl text-base whitespace-pre-line text-ink"
+                data-testid="instructions"
+              >
+                {study.instructions.trim() || "Sort the cards into groups that make sense to you."}
+              </p>
+            </div>
+            <div>{editable && <SaveIndicator save={save} onRetry={controller.retry} />}</div>
+          </header>
+
+          {readOnlyBanner && (
+            <Notice tone={readOnlyBanner.tone} className="mx-auto mt-6 max-w-2xl text-center">
+              <span data-testid="readonly-banner">{readOnlyBanner.text}</span>
+            </Notice>
+          )}
+          {notice && !readOnlyBanner && (
+            <div
+              className="mx-auto mt-6 flex max-w-2xl items-center gap-3 rounded-md border border-amber-400/50 bg-amber-50 px-4 py-3 text-sm"
+              role="status"
+              data-testid="board-notice"
+            >
+              <span className="flex-1">{notice.message}</span>
+              <Button size="sm" variant="ghost" onClick={controller.dismissNotice}>
+                Dismiss
+              </Button>
+            </div>
+          )}
+
+          <DndContext
+            id={dndId}
+            sensors={editable ? sensors : undefined}
+            collisionDetection={collisionDetection}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+            onDragCancel={endDrag}
+            accessibility={{
+              announcements,
+              screenReaderInstructions: {
+                draggable:
+                  "To pick up a card, press Space or Enter. Use the arrow keys to move it between groups and the unsorted cards. Press Space or Enter again to drop it, or Escape to cancel.",
+              },
+            }}
+          >
+            <div className="mt-8 flex flex-wrap items-start gap-6" data-testid="groups">
+              {view.groups.map((group) => (
+                <GroupColumn
+                  key={group.id}
+                  group={group}
+                  cardsById={cardsById}
+                  editable={editable}
+                  canRename={editable && canRenameGroup(ctx, group.kind)}
+                  canDelete={editable && canDeleteGroup(ctx, group.kind)}
+                  showDescriptions={showDescriptions}
+                  autoFocusName={focusGroupId === group.id}
+                  onAutoFocused={clearFocusGroup}
+                  onRename={renameGroup}
+                  onDelete={deleteGroup}
+                  cardControls={cardControls}
+                />
+              ))}
+              {editable && (
+                <NewGroupColumn
+                  canAdd={canAddGroup}
+                  limitReached={caps.groupLimitReached}
+                  maxGroups={study.maxParticipantGroups}
+                  onAdd={() => addGroup()}
+                />
+              )}
+              {view.groups.length === 0 && !editable && (
+                <p className="text-sm text-muted">No groups.</p>
+              )}
+            </div>
+
+            <Tray
+              cards={trayCards}
+              editable={editable}
+              showDescriptions={showDescriptions}
+              progress={progress}
+              canAddCard={canAddCard}
+              onAddCard={() => setCardForm({ mode: "add" })}
+              cardControls={cardControls}
+            />
+
+            <DragOverlay>
+              {activeCard ? <CardFace card={activeCard} variant="tray" lifted /> : null}
+            </DragOverlay>
+          </DndContext>
+
+          {mode === "participant" && !readOnly && (
+            <footer className="mt-8 flex justify-end border-t border-line pt-6">
+              <CompletionControl
+                blockers={blockers}
+                controller={controller}
+                hideButton={!editable}
               />
-            ))}
-            {editable && (
-              <NewGroupColumn
-                canAdd={canAddGroup}
-                limitReached={caps.groupLimitReached}
-                maxGroups={study.maxParticipantGroups}
-                onAdd={() => addGroup()}
-              />
-            )}
-            {view.groups.length === 0 && !editable && (
-              <p className="text-sm text-muted">No groups.</p>
-            )}
-          </div>
-
-          <Tray
-            cards={trayCards}
-            editable={editable}
-            showDescriptions={showDescriptions}
-            progress={progress}
-            canAddCard={canAddCard}
-            onAddCard={() => setCardForm({ mode: "add" })}
-            cardControls={cardControls}
-          />
-
-          <DragOverlay>
-            {activeCard ? <CardFace card={activeCard} variant="tray" lifted /> : null}
-          </DragOverlay>
-        </DndContext>
-
-        {mode === "participant" && !readOnly && (
-          <footer className="mt-8 flex justify-end border-t border-line pt-6">
-            <CompletionControl blockers={blockers} controller={controller} hideButton={!editable} />
-          </footer>
-        )}
-      </main>
+            </footer>
+          )}
+        </Root>
+      </BoardModeContext.Provider>
 
       <CardFormDialog
         open={cardForm !== null}
