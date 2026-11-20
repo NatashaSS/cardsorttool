@@ -1,0 +1,69 @@
+# Continuous integration: static checks, unit/integration tests, requirement traceability,
+# end-to-end tests in Chromium, Firefox and WebKit (NFR-07, NFR-09), and a Docker image build.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, typecheck, tests and e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - run: npm run req:coverage -- --strict
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: End-to-end tests (all browsers)
+        run: npm run test:e2e
+        env:
+          E2E_ALL_BROWSERS: "1"
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image (no push)
+        run: docker build .

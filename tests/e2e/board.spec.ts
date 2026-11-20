@@ -153,8 +153,12 @@ test.describe("participant board", () => {
     await card(page, "Apples").focus();
     await page.keyboard.press("Space");
     await expect(card(page, "Apples")).toHaveAttribute("aria-pressed", "true");
-    await page.keyboard.press("ArrowUp");
-    await expect(page.getByText(/Card Apples is over group/)).toBeAttached();
+    // dnd-kit's KeyboardSensor only attaches its keydown listener in a setTimeout after the
+    // pick-up, so an arrow key pressed right away can be lost (flaky). Retry until it moves.
+    await expect(async () => {
+      await page.keyboard.press("ArrowUp");
+      await expect(page.getByText(/Card Apples is over group/)).toBeAttached({ timeout: 500 });
+    }).toPass();
     await page.keyboard.press("Space");
     await expect(page.getByText(/Card Apples was dropped in group/)).toBeAttached();
     await expect(page.getByTestId("progress")).toHaveText("1 of 3 cards sorted");
@@ -287,12 +291,19 @@ test.describe("participant board", () => {
     await expect(dialog).toHaveCount(0);
 
     await complete.click();
+    await expect(dialog).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
 
+    // Backdrop. Radix only starts listening for outside pointer-downs in a setTimeout after
+    // the dialog mounts, so a click straight after opening can land before the listener
+    // exists (flaky). Retry the click until the dialog closes.
     await complete.click();
-    await page.mouse.click(5, 5); // backdrop
-    await expect(dialog).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+    await expect(async () => {
+      await page.mouse.click(5, 5);
+      await expect(dialog).toHaveCount(0, { timeout: 500 });
+    }).toPass();
 
     await complete.click();
     const handle = await dialog.elementHandle();
