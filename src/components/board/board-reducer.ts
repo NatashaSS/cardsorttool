@@ -128,6 +128,7 @@ export function applyBoardOp(model: BoardModel, op: BoardOpInput): BoardModel {
         label: op.label.trim(),
         description: op.description?.trim() || null,
         origin: "participant",
+        imageUrl: null,
       };
       const next = {
         ...model,

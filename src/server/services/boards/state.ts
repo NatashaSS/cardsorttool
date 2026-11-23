@@ -6,8 +6,18 @@ import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import type { BoardStateDTO, CardDTO, GroupDTO, StudyRulesConfig } from "@/lib/api-types";
 import { ParticipantFieldsSchema, StudySettingsSchema, type ParticipantFieldConfig } from "@/lib/schemas";
 import * as schema from "../../db/schema";
-import { boards, cards, groups, placements, studies, type BoardRow, type StudyRow } from "../../db/schema";
+import {
+  boards,
+  cardImages,
+  cards,
+  groups,
+  placements,
+  studies,
+  type BoardRow,
+  type StudyRow,
+} from "../../db/schema";
 import { notFound } from "../../errors";
+import { imageUrlOf } from "../card-images";
 
 /** Either the database handle or a transaction on it. */
 export type Q = BaseSQLiteDatabase<"sync", RunResult, typeof schema>;
@@ -64,6 +74,21 @@ export function predefinedCards(q: Q, studyId: string) {
     .all();
 }
 
+/**
+ * Predefined cards with their image's updated_at (BRD-09): one left join on card_image that
+ * selects only the timestamp, never the BLOB. Same order as predefinedCards.
+ */
+export function predefinedCardsWithImages(q: Q, studyId: string) {
+  return q
+    .select({ card: cards, imageUpdatedAt: cardImages.updatedAt })
+    .from(cards)
+    .leftJoin(cardImages, eq(cardImages.cardId, cards.id))
+    .where(and(eq(cards.studyId, studyId), isNull(cards.boardId)))
+    .orderBy(asc(cards.position), asc(cards.createdAt), asc(cards.id))
+    .all()
+    .map((r) => ({ ...r.card, imageUpdatedAt: r.imageUpdatedAt }));
+}
+
 /** Cards the participant created on this board, in creation order. */
 export function boardCards(q: Q, boardId: string) {
   return q
@@ -104,7 +129,7 @@ export type BoardSnapshot = {
 
 /** Current cards/groups/tray of a board. */
 export function snapshot(q: Q, board: BoardRow, study: StudyRow): BoardSnapshot {
-  const predefCards = predefinedCards(q, study.id);
+  const predefCards = predefinedCardsWithImages(q, study.id);
   const ownCards = boardCards(q, board.id);
   const groupRows = [...predefinedGroups(q, study.id), ...boardGroups(q, board.id)];
   const placementRows = q
@@ -129,12 +154,15 @@ export function snapshot(q: Q, board: BoardRow, study: StudyRow): BoardSnapshot 
       label: c.label,
       description: c.description,
       origin: "predefined" as const,
+      imageUrl: imageUrlOf(c.id, c.imageUpdatedAt),
     })),
     ...ownCards.map((c) => ({
       id: c.id,
       label: c.label,
       description: c.description,
       origin: "participant" as const,
+      // STU-13: participants cannot add images to their own cards.
+      imageUrl: null,
     })),
   ];
 

@@ -1,6 +1,7 @@
 // Database schema (DESIGN §4). Coordinator-owned: change only via a new migration
 // (`npm run db:generate`), never by editing an applied migration.
-import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { blob, index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { CARD_IMAGE_TYPES } from "@/lib/card-images";
 import type { ParticipantFieldConfig, StudySettings } from "@/lib/schemas";
 import {
   BOARD_STATUSES,
@@ -68,6 +69,21 @@ export const cards = sqliteTable(
   (t) => [index("card_study_idx").on(t.studyId), index("card_board_idx").on(t.boardId)],
 );
 
+/**
+ * One image per predefined card (STU-13, DESIGN §11a). A separate table so card queries never
+ * load the BLOB; cascades with the card (and so with the study).
+ */
+export const cardImages = sqliteTable("card_image", {
+  cardId: text("card_id")
+    .primaryKey()
+    .references(() => cards.id, { onDelete: "cascade" }),
+  mimeType: text("mime_type", { enum: CARD_IMAGE_TYPES }).notNull(),
+  data: blob("data", { mode: "buffer" }).notNull(),
+  byteSize: integer("byte_size").notNull(),
+  /** ISO timestamp; its milliseconds are the cache-busting `v` of the image URL. */
+  updatedAt: text("updated_at").notNull(),
+});
+
 /** "group" is an SQL keyword, hence "study_group". */
 export const groups = sqliteTable(
   "study_group",
@@ -100,7 +116,10 @@ export const placements = sqliteTable(
       .references(() => groups.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.boardId, t.cardId] }), index("placement_group_idx").on(t.groupId)],
+  (t) => [
+    primaryKey({ columns: [t.boardId, t.cardId] }),
+    index("placement_group_idx").on(t.groupId),
+  ],
 );
 
 export type StudyRow = typeof studies.$inferSelect;
@@ -108,3 +127,4 @@ export type BoardRow = typeof boards.$inferSelect;
 export type CardRow = typeof cards.$inferSelect;
 export type GroupRow = typeof groups.$inferSelect;
 export type PlacementRow = typeof placements.$inferSelect;
+export type CardImageRow = typeof cardImages.$inferSelect;

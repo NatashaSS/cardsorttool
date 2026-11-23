@@ -55,10 +55,37 @@ export function CardFace({
   );
 }
 
+/**
+ * BRD-09: the card's image above its label, scaled to the card width with a capped height.
+ * Keyed by URL by the caller, so a replaced image gets a fresh error state.
+ */
+function CardImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- served by our own route with long-lived caching; next/image adds nothing here
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      onError={() => setFailed(true)}
+      // An error during server rendering fires before hydration attaches onError.
+      ref={(el) => {
+        if (el?.complete && el.naturalWidth === 0) setFailed(true);
+      }}
+      className="pointer-events-none mb-1.5 block h-auto max-h-30 w-full rounded-[2px] object-contain"
+      data-testid="card-image"
+    />
+  );
+}
+
 function CardText({ card }: { card: CardDTO }) {
   const mode = useBoardMode();
   return (
     <>
+      {card.imageUrl && <CardImage key={card.imageUrl} src={card.imageUrl} alt={card.label} />}
       <span>{card.label}</span>
       {card.origin === "participant" && (
         <span className="mt-1 block text-[11px] font-medium tracking-wide text-muted uppercase">

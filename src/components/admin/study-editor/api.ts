@@ -25,10 +25,11 @@ function isApiErrorBody(value: unknown): value is ApiErrorBody {
   );
 }
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 /**
  * Call an admin endpoint. `path` is relative to /api/admin (e.g. "/studies/abc/cards").
+ * `body` is sent as JSON, or as-is when it is FormData (multipart uploads).
  * Resolves with the parsed JSON (undefined for 204); throws AdminApiError otherwise.
  */
 export async function adminApi<T = unknown>(
@@ -36,11 +37,13 @@ export async function adminApi<T = unknown>(
   { method = "GET", body }: { method?: Method; body?: unknown } = {},
 ): Promise<T> {
   let res: Response;
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
   try {
     res = await fetch(`/api/admin${path}`, {
       method,
-      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      // FormData sets its own multipart Content-Type (with the boundary).
+      headers: body === undefined || isForm ? undefined : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       cache: "no-store",
     });
   } catch {

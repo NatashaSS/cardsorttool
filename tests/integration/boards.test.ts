@@ -291,7 +291,7 @@ describe("getBoardState", () => {
       ["Mine", "participant", [s.cardIds[2]]],
     ]);
     expect(st.unsortedCardIds).toEqual([s.cardIds[3], "myCard001"]);
-    expect(st.cards.at(-1)).toEqual({ id: "myCard001", label: "Extra", description: "desc", origin: "participant" });
+    expect(st.cards.at(-1)).toEqual({ id: "myCard001", label: "Extra", description: "desc", origin: "participant", imageUrl: null });
     expect(st.board.revision).toBe(5);
     expect(getBoardStateById(s.db, st.board.id)).toEqual(st);
   });
@@ -627,8 +627,8 @@ describe("applyBoardOp: participant cards", () => {
       const st = state(s);
       expect(st.unsortedCardIds).toEqual([...s.cardIds, "newCard001", "newCard002"]);
       expect(st.cards.slice(-2)).toEqual([
-        { id: "newCard001", label: "Mine", description: null, origin: "participant" },
-        { id: "newCard002", label: "Second", description: "Why", origin: "participant" },
+        { id: "newCard001", label: "Mine", description: null, origin: "participant", imageUrl: null },
+        { id: "newCard002", label: "Second", description: "Why", origin: "participant", imageUrl: null },
       ]);
       const other = createBoard(s.db, s.study.slug, { name: "Bob" });
       expect(getBoardState(s.db, other.token).cards.map((c) => c.id)).toEqual(s.cardIds);

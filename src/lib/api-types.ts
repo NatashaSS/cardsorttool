@@ -65,6 +65,8 @@ export type CardDTO = {
   label: string;
   description: string | null;
   origin: CardOrigin;
+  /** BRD-09: URL of the card's image (predefined cards only), or null. */
+  imageUrl: string | null;
 };
 
 export type GroupDTO = {
@@ -132,6 +134,8 @@ export type AdminCardDTO = {
   label: string;
   description: string | null;
   position: number;
+  /** STU-13: URL of the card's image (cache-busted on replace), or null. */
+  imageUrl: string | null;
 };
 
 export type AdminGroupDTO = { id: string; name: string; position: number };

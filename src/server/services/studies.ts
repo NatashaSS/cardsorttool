@@ -32,6 +32,7 @@ import {
 import type { DB } from "../db/client";
 import {
   boards,
+  cardImages,
   cards,
   groups,
   studies,
@@ -42,6 +43,7 @@ import {
 import { env } from "../env";
 import { ServiceError, badRequest, notFound } from "../errors";
 import { newId, newStudySlug, nowIso } from "../ids";
+import { copyCardImages, imageUrlOf } from "./card-images";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -117,12 +119,40 @@ function predefinedGroups(db: Conn, studyId: string): GroupRow[] {
     .all();
 }
 
-const toCardDTO = (c: CardRow): AdminCardDTO => ({
+/** A card row plus its image's updated_at (null = no image), from a left join. */
+type CardWithImage = CardRow & { imageUpdatedAt: string | null };
+
+/** Predefined cards with image info: one left join that never reads the BLOB (STU-13). */
+function predefinedCardsWithImages(db: Conn, studyId: string): CardWithImage[] {
+  return db
+    .select({ card: cards, imageUpdatedAt: cardImages.updatedAt })
+    .from(cards)
+    .leftJoin(cardImages, eq(cardImages.cardId, cards.id))
+    .where(and(eq(cards.studyId, studyId), isNull(cards.boardId)))
+    .orderBy(asc(cards.position), asc(cards.createdAt))
+    .all()
+    .map((r) => ({ ...r.card, imageUpdatedAt: r.imageUpdatedAt }));
+}
+
+function imageUpdatedAtOf(db: Conn, cardId: string): string | null {
+  return (
+    db
+      .select({ updatedAt: cardImages.updatedAt })
+      .from(cardImages)
+      .where(eq(cardImages.cardId, cardId))
+      .get()?.updatedAt ?? null
+  );
+}
+
+const toCardDTO = (c: CardRow, imageUpdatedAt: string | null = null): AdminCardDTO => ({
   id: c.id,
   label: c.label,
   description: c.description,
   position: c.position,
+  imageUrl: imageUrlOf(c.id, imageUpdatedAt),
 });
+
+const withImageToDTO = (c: CardWithImage): AdminCardDTO => toCardDTO(c, c.imageUpdatedAt);
 
 const toGroupDTO = (g: GroupRow): AdminGroupDTO => ({
   id: g.id,
@@ -158,7 +188,7 @@ function toDetail(db: Conn, row: StudyRow): StudyDetailDTO {
     participantFields: readParticipantFields(row.participantFields),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    cards: predefinedCards(db, row.id).map(toCardDTO),
+    cards: predefinedCardsWithImages(db, row.id).map(withImageToDTO),
     groups: predefinedGroups(db, row.id).map(toGroupDTO),
     boardCounts: boardCountsFor(db, row.id),
   };
@@ -428,11 +458,15 @@ export function duplicateStudy(db: DB, studyId: string): StudyDetailDTO {
       updatedAt: now,
     };
     tx.insert(studies).values(copy).run();
+    const cardIdMap = new Map<string, string>();
     for (const c of predefinedCards(tx, studyId)) {
+      const id = newId();
+      cardIdMap.set(c.id, id);
       tx.insert(cards)
-        .values({ ...c, id: newId(), studyId: copy.id, boardId: null, createdAt: now })
+        .values({ ...c, id, studyId: copy.id, boardId: null, createdAt: now })
         .run();
     }
+    copyCardImages(tx, cardIdMap);
     for (const g of predefinedGroups(tx, studyId)) {
       tx.insert(groups)
         .values({ ...g, id: newId(), studyId: copy.id, boardId: null })
@@ -516,7 +550,7 @@ export function updateCard(
     assertUniqueLabel(predefinedCards(tx, studyId), label, cardId);
     tx.update(cards).set({ label, description }).where(eq(cards.id, cardId)).run();
     touch(tx, studyId);
-    return toCardDTO({ ...card, label, description });
+    return toCardDTO({ ...card, label, description }, imageUpdatedAtOf(tx, cardId));
   });
 }
 
@@ -557,7 +591,7 @@ export function reorderCards(db: DB, studyId: string, ids: string[]): AdminCardD
       tx.update(cards).set({ position }).where(eq(cards.id, id)).run();
     });
     touch(tx, studyId);
-    return predefinedCards(tx, studyId).map(toCardDTO);
+    return predefinedCardsWithImages(tx, studyId).map(withImageToDTO);
   });
 }
 

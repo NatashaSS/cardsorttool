@@ -418,8 +418,8 @@ describe("studies: predefined cards", () => {
     );
     deleteCard(db, s.id, a.id);
     expect(getStudy(db, s.id).cards).toEqual([
-      { id: b.id, label: "Blueberries", description: "Blue", position: 0 },
-      { id: c.id, label: "Cherries", description: null, position: 1 },
+      { id: b.id, label: "Blueberries", description: "Blue", position: 0, imageUrl: null },
+      { id: c.id, label: "Cherries", description: null, position: 1, imageUrl: null },
     ]);
   });
 

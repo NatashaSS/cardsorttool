@@ -214,6 +214,7 @@ describe("board reducer (SAVE-02 optimistic updates mirror the server)", () => {
         label: "Mine",
         description: null,
         origin: "participant",
+        imageUrl: null,
       });
       expect(m.unsortedCardIds).toEqual(["card-c", "card-a", "card-e", "own-card1"]);
       expect(m.trayOrder.at(-1)).toBe("own-card1");
