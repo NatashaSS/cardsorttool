@@ -9,7 +9,7 @@ import {
   sanitizeFilter,
   type AnalysisFilter,
   type FilterFieldOptions,
-} from "@/components/admin/analysis/filter";
+} from "@/lib/analysis-filter";
 import type { AnalysisBoard, AnalysisInput, AnalysisResult } from "@/lib/api-types";
 import type { BoardStatus } from "@/lib/types";
 import { computeAnalysis } from "../analysis";

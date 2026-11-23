@@ -14,7 +14,7 @@ import {
   sanitizeFilter,
   TEXT_OPTION_LIMIT,
   toggleFilterValue,
-} from "@/components/admin/analysis/filter";
+} from "@/lib/analysis-filter";
 import type { AnalysisResult } from "@/lib/api-types";
 import type { ParticipantAnswers } from "@/lib/types";
 

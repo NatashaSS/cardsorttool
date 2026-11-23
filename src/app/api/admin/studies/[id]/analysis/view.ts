@@ -7,7 +7,7 @@ import {
   analysisQueryFromParams,
   describeFilter,
   isFilterActive,
-} from "@/components/admin/analysis/filter";
+} from "@/lib/analysis-filter";
 import type { AnalysisView } from "@/components/admin/analysis/types";
 import { computeAnalysis } from "@/server/analysis";
 import type { DB } from "@/server/db/client";

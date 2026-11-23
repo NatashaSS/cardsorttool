@@ -4,7 +4,7 @@
 import { notFound } from "next/navigation";
 import { getAnalysisView } from "@/app/api/admin/studies/[id]/analysis/view";
 import { AnalysisDashboard } from "@/components/admin/analysis/AnalysisDashboard";
-import { analysisQueryFromParams } from "@/components/admin/analysis/filter";
+import { analysisQueryFromParams } from "@/lib/analysis-filter";
 import type { AnalysisView } from "@/components/admin/analysis/types";
 import { getDb } from "@/server/db/client";
 import { ServiceError } from "@/server/errors";

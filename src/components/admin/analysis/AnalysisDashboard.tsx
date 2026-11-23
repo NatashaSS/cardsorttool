@@ -8,7 +8,7 @@ import { adminApi, errorMessage } from "@/components/admin/study-editor/api";
 import { SORT_TYPE_LABELS } from "@/components/admin/study-editor/labels";
 import { StatusBadge } from "@/components/admin/study-editor/StatusBadge";
 import { DendrogramView } from "./DendrogramView";
-import { analysisQueryString, isFilterActive, type AnalysisFilter } from "./filter";
+import { analysisQueryString, isFilterActive, type AnalysisFilter } from "@/lib/analysis-filter";
 import { FilterBar } from "./FilterBar";
 import { DOWNLOAD_LINK_CLASS } from "./grid";
 import { PlacementMatrix } from "./PlacementMatrix";

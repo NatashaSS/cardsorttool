@@ -11,7 +11,7 @@ import {
   toggleFilterValue,
   type AnalysisFilter,
   type FilterFieldOptions,
-} from "./filter";
+} from "@/lib/analysis-filter";
 
 /** Lists longer than this get a search box. */
 const SEARCH_THRESHOLD = 8;

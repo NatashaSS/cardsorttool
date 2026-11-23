@@ -1,6 +1,6 @@
 // Response of GET /api/admin/studies/[id]/analysis and props of the analysis page (stream I).
 import type { AnalysisResult } from "@/lib/api-types";
-import type { AnalysisFilter, FilterFieldOptions } from "./filter";
+import type { AnalysisFilter, FilterFieldOptions } from "@/lib/analysis-filter";
 import type { SortType, StudyStatus } from "@/lib/types";
 
 export type AnalysisView = {
