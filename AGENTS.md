@@ -3,7 +3,7 @@
 Guidance for AI coding agents (and humans) working in this repository.
 
 > **Status: v1 feature-complete (Waves 0–2 done).** Every MUST and SHOULD requirement has tests;
-> remaining work is Wave 3 polish/hardening (see `docs/IMPLEMENTATION_PLAN.md`).
+> Wave 3 (card images, analysis filters) is in progress — see `docs/IMPLEMENTATION_PLAN.md` §6.
 
 ## What this app is
 

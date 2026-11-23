@@ -30,7 +30,7 @@ Wave 2  ┌────────────────┬──────
         └────────────────┴────────────────┴────────────────┘
           │  merge + integration checkpoint 2 (all "M" requirements covered)
           ▼
-Wave 3  K Polish ("S" items)  ·  L Hardening & deployment   (parallel)
+Wave 3  M Card images  ·  N Analysis filters   (parallel)
 ```
 
 Dependencies between Wave 1 streams are **only through Wave 0 contracts**, never through each
@@ -305,15 +305,38 @@ All three merged; `npm run req:coverage` shows every **M** requirement covered; 
 
 ---
 
-## 6. Wave 3 — polish & hardening (parallel)
+## 6. Wave 3 — card images and analysis filters (parallel)
 
-- **K. Polish ("S" items):** BRD-03 keyboard DnD and screen-reader announcements, BRD-07
-  drop-to-create-group, STU-06 group limit UI, STU-12 duplicate, PFLD-04 custom questions,
-  PERM-07, PERM-09, RES-06 auto-refresh, ANL-07 — whichever weren't finished earlier.
-- **L. Hardening & deployment:** NFR-04 load check with 200 cards / 1 000 boards (seed script),
-  NFR-05/06 audit, AUTH-05, security review, `Dockerfile` + systemd unit example, backup docs
-  (NFR-08), README. **Partly done early:** Dockerfile, docker-compose.yml, README.md and backup
-  docs were added before Wave 2; L still covers systemd example, load checks and security review.
+The original Wave 3 polish items (K) were all delivered in Waves 1–2, and hardening (L) is
+deferred by the product owner (load check, security review, systemd example). Wave 3 instead adds
+two features (REQUIREMENTS STU-13, BRD-09, ANL-09; DESIGN §11a). They touch disjoint files, so
+they run in parallel. Waves 1–2 are finished, so file ownership is reassigned per stream below.
+
+### M. Card images (STU-13, BRD-09)
+
+- **Owns:** `src/server/db/schema.ts` + a new generated migration in `drizzle/` (the only stream
+  touching the schema this wave); `src/lib/api-types.ts` (only the `imageUrl` fields on `CardDTO`
+  and `AdminCardDTO`); new `src/server/services/card-images.ts`; `src/server/services/studies.ts`
+  and `src/server/services/boards/state.ts` (populate `imageUrl`, copy images on duplicate);
+  `src/app/api/admin/studies/[id]/cards/[cardId]/image/**`; `src/app/api/images/**`; the card
+  list in `src/components/admin/study-editor/**`; `src/components/board/Card.tsx` (and test
+  fixtures needing `imageUrl`); tests `tests/**/card-images*`.
+- **Builds:** schema + migration, validation by magic bytes, upload/replace/remove API, public
+  image route with caching/security headers, editor thumbnails and controls, board rendering.
+
+### N. Analysis filters (ANL-09)
+
+- **Owns:** `src/server/services/analysis-data.ts`, `src/app/api/admin/studies/[id]/analysis/**`,
+  `src/app/admin/(protected)/studies/[id]/analysis/**`, `src/components/admin/analysis/**`,
+  tests `tests/**/analysis-filter*`.
+- **Builds:** filter parsing/serialising, filter options with counts, filtering in
+  `loadAnalysisInput`, filter UI (per-field multi-select, chips, clear all, URL state), CSV
+  exports honouring filters.
+
+### Not in scope (deferred)
+
+ANL-08 (merge group names), and the former L items: NFR-04 load check through the real UI,
+security review, systemd example.
 
 ---
 

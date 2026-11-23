@@ -114,6 +114,12 @@ card
   label, description, position
   created_at
 
+card_image                           -- Wave 3 [STU-13]; separate so card queries stay light
+  card_id PK FK → card (cascade)     -- predefined cards only
+  mime_type   'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
+  data        BLOB (≤ 2 MB)
+  byte_size, updated_at
+
 study_group                          -- "group" is an SQL keyword
   id, study_id FK
   board_id FK null   -- null = predefined; set = belongs to one board
@@ -470,6 +476,44 @@ Default input set: completed, non-excluded boards; optional toggle to include in
 boards. The UI always shows `n`.
 
 ---
+
+## 11a. Wave 3: card images and analysis filters
+
+### Card images [STU-13, BRD-09]
+
+- **Storage:** BLOBs in the `card_image` table (one row per card). Keeping images in SQLite
+  keeps "one file = the whole dataset" for backups and Docker volumes, and 200 cards × 2 MB is
+  well within SQLite's comfort zone. Validation sniffs magic bytes (PNG `89 50 4E 47`, JPEG
+  `FF D8 FF`, GIF `GIF87a`/`GIF89a`, WebP `RIFF….WEBP`) and ignores the declared type; SVG is
+  never accepted (it can carry script).
+- **Admin API:** `PUT /api/admin/studies/[id]/cards/[cardId]/image` with `multipart/form-data`
+  field `file` → `AdminCardDTO`; `DELETE` the same path → `AdminCardDTO`. Draft-only
+  (`study_locked` otherwise); too large → `413`-style `unprocessable` with a clear message.
+- **Serving:** `GET /api/images/cards/[cardId]?v=<updatedAt ms>` (public, like the board itself:
+  card ids are unguessable). Headers: the stored `Content-Type`, `Cache-Control: public,
+  max-age=31536000, immutable` (the `v` query busts the cache on replace),
+  `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'`. 404 when
+  the card has no image.
+- **DTOs:** `CardDTO.imageUrl` and `AdminCardDTO.imageUrl` (`string | null`), filled by one left
+  join on `card_image` (no BLOB read) in `getBoardState` and `getStudy`.
+- **UI:** the editor's card list shows a thumbnail with Upload / Replace / Remove; the board's
+  sticky note shows the image above the label (`loading="lazy"`, `alt` = label, max height
+  ~7.5 rem, `object-contain`), falling back to the label on error.
+- Duplicating a study copies the image rows; FK cascades delete them with the card/study.
+
+### Analysis filters [ANL-09]
+
+- **Model:** `AnalysisFilter = Record<fieldKey, string[]>`; the value `""` means "not answered".
+  OR within a field, AND across fields. Text answers match case-insensitively after trimming;
+  select fields match the stored option value.
+- **API / URL:** repeated `filter=<fieldKey>:<value>` query parameters (split at the first `:`,
+  URL-encoded), e.g. `?includeInProgress=1&filter=seniority:senior&filter=seniority:lead`. The
+  same parameters work on the page URL, the analysis API and both matrix CSV exports.
+- **Options:** the analysis view also returns `filterOptions` — per enabled participant field:
+  key, label, and values `{ value, label, count }` computed over the boards that pass the status
+  and exclusion rules but *before* participant filters (so options don't vanish as you filter).
+- **Data:** `loadAnalysisInput` applies the filter to the board set before computing, so every
+  section and `n` reflect it. The engine (`src/server/analysis`) is unchanged.
 
 ## 12. Security
 

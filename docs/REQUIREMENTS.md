@@ -53,7 +53,7 @@ See [`DESIGN.md`](./DESIGN.md) for how these are implemented.
 | STU-10 | M | A study cannot go live with zero cards. | Publishing is rejected with a clear message. |
 | STU-11 | M | Each live study has a shareable participant link. | The admin can copy the link from the study page. The link uses an unguessable slug and does not expose internal IDs. |
 | STU-12 | S | The admin can duplicate a study. | The copy is a new `draft` with the same settings, cards, groups and participant fields, and no boards. |
-| STU-13 | C | The admin can add an image to a card. | — |
+| STU-13 | M | The admin can add an image to a predefined card (Wave 3). | While the study is `draft`, each predefined card can have at most one image: upload, replace and remove from the card list in the editor, which shows a thumbnail. Accepted: PNG, JPEG, WebP or GIF, at most 2 MB, checked by file content (not just name or declared type); SVG and anything else are rejected with a clear message. The card label stays required (it is the image's alt text and the name used in analysis and exports). Images are stored in the SQLite database, so backups include them. Duplicating a study copies its images; deleting a card or study deletes them. Participants cannot add images to their own cards. |
 
 ## 3. Participant permissions — per-study settings (`PERM`)
 
@@ -105,6 +105,7 @@ mode are hidden in the UI and ignored by the server (see the matrix in DESIGN.md
 | BRD-06 | M | Participants can add, rename and delete groups and cards according to the study's PERM settings. | Controls not permitted are not shown; the server rejects them regardless. |
 | BRD-07 | S | Dropping a card onto a "New group" drop zone creates a group containing that card (open-unbounded / hybrid). | — |
 | BRD-08 | M | A progress indicator shows "X of Y cards sorted". | Y includes participant-created cards. |
+| BRD-09 | M | Cards with an image show it on the board (Wave 3). | The image appears above the label on the sticky note, scaled to the card width with a capped height and its aspect ratio kept, in the tray, in groups, while dragging, and in the admin read-only view. `alt` = the card label. If the image fails to load the card falls back to the label only. Images are loaded lazily and served with long-lived caching. |
 
 ## 7. Auto-save (`SAVE`)
 
@@ -152,7 +153,10 @@ also include in-progress boards. All matrices show the number of boards used (`n
 | ANL-06 | M | Analysis computations are correct. | Unit tests cover the similarity, placement and clustering functions against hand-computed fixtures, including edge cases: zero boards, one board, cards never sorted, ties. |
 | ANL-07 | S | Matrices can be exported as CSV. | — |
 | ANL-08 | C | The admin can merge ("standardise") participant group names. | — |
-| ANL-09 | C | Filter analysis by participant field (e.g. only seniority = Senior). | — |
+| ANL-09 | M | Filter analysis by participant details (Wave 3), e.g. only seniority = Senior. | The analysis page offers a filter for each of the study's participant fields. For each field the admin picks one or more values that occur among the analysed boards, each shown with its board count: select fields (seniority, age range, gender, country, nationality) use their option labels; free-text fields (name, email, organisation, role, custom questions) list the distinct answers, grouped case-insensitively after trimming; every field also offers "(not answered)". Values within a field combine with OR, fields combine with AND. Filters apply to every analysis section and to the matrix CSV exports, combine with the include-in-progress toggle, and `n` reflects them. Active filters are shown as removable chips with a "Clear all", and are kept in the page URL so a reload or shared link keeps them. A filter that matches no boards shows the empty state. |
+
+> **Wave 3 scope:** STU-13, BRD-09 and ANL-09 were added or promoted to **M** after v1. ANL-08
+> (merging participant group names) stays a **C**.
 
 ## 11. Non-functional (`NFR`)
 
