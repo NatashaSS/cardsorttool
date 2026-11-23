@@ -1,18 +1,26 @@
 // Stream I: builds the analysis page/API payload (ANL-01..05) and the CSV downloads (ANL-07).
+// Stream N: participant-detail filters (ANL-09) on all of them.
 import "server-only";
 import { count, eq } from "drizzle-orm";
 import { placementCsv, similarityCsv } from "@/components/admin/analysis/csv";
+import {
+  analysisQueryFromParams,
+  describeFilter,
+  isFilterActive,
+} from "@/components/admin/analysis/filter";
 import type { AnalysisView } from "@/components/admin/analysis/types";
 import { computeAnalysis } from "@/server/analysis";
 import type { DB } from "@/server/db/client";
 import { boards, studies } from "@/server/db/schema";
 import { notFound, ServiceError } from "@/server/errors";
-import { loadAnalysisInput, type AnalysisOptions } from "@/server/services/analysis-data";
+import { loadAnalysisData, type AnalysisOptions } from "@/server/services/analysis-data";
 
-/** `?includeInProgress=1` (or `true`) → include in-progress boards. */
+/**
+ * `?includeInProgress=1` (or `true`) → include in-progress boards; repeated
+ * `filter=<fieldKey>:<value>` → participant filter (ANL-09).
+ */
 export function analysisOptions(req: Request): AnalysisOptions {
-  const v = new URL(req.url).searchParams.get("includeInProgress");
-  return { includeInProgress: v === "1" || v === "true" };
+  return analysisQueryFromParams(new URL(req.url).searchParams);
 }
 
 /** @throws ServiceError not_found */
@@ -28,7 +36,7 @@ export function getAnalysisView(db: DB, studyId: string, opts: AnalysisOptions):
     .where(eq(studies.id, studyId))
     .get();
   if (!study) throw notFound("Study not found");
-  const input = loadAnalysisInput(db, studyId, opts);
+  const { input, filter, filterOptions, unfilteredN } = loadAnalysisData(db, studyId, opts);
 
   const boardCounts = { completed: 0, inProgress: 0, excluded: 0 };
   const rows = db
@@ -46,6 +54,9 @@ export function getAnalysisView(db: DB, studyId: string, opts: AnalysisOptions):
   return {
     study,
     includeInProgress: opts.includeInProgress,
+    filter,
+    filterOptions,
+    unfilteredN,
     boardCounts,
     cards: input.cards,
     groups: input.groups,
@@ -73,9 +84,14 @@ export function matrixCsvResponse(
   kind: MatrixKind,
 ): Response {
   const view = getAnalysisView(db, studyId, opts);
-  const filename = `${kind}-matrix-${studyId}.csv`;
-  if (kind === "similarity") return csvResponse(similarityCsv(view.cards, view.result), filename);
-  const csv = placementCsv(view.cards, view.result);
+  // ANL-09: a filtered export says so in its file name and in the header cell next to n.
+  const filtered = isFilterActive(view.filter);
+  const note = filtered ? describeFilter(view.filter, view.filterOptions) : undefined;
+  const filename = `${kind}-matrix-${studyId}${filtered ? "-filtered" : ""}.csv`;
+  if (kind === "similarity") {
+    return csvResponse(similarityCsv(view.cards, view.result, note), filename);
+  }
+  const csv = placementCsv(view.cards, view.result, note);
   if (csv === null) {
     throw new ServiceError(
       "unprocessable",

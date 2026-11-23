@@ -28,10 +28,15 @@ function pct(ratio: number | null): number | null {
 
 type Labels = { id: string; label: string }[];
 
+/** Header cell: "Similarity % (n = 3)" or, filtered (ANL-09), "… (n = 3; Seniority: Senior)". */
+function headerCell(title: string, n: number, note?: string): string {
+  return `${title} (n = ${n}${note ? `; ${note}` : ""})`;
+}
+
 /**
  * Full (symmetric) similarity matrix in % in dendrogram leaf order; blank = never both sorted.
  */
-export function similarityCsv(cards: Labels, result: AnalysisResult): string {
+export function similarityCsv(cards: Labels, result: AnalysisResult, note?: string): string {
   const { similarity, dendrogram } = result;
   const index = new Map(similarity.cardIds.map((id, i) => [id, i]));
   const label = new Map(cards.map((c) => [c.id, c.label]));
@@ -39,7 +44,7 @@ export function similarityCsv(cards: Labels, result: AnalysisResult): string {
     dendrogram.leafOrder.length > 0 ? dendrogram.leafOrder : similarity.cardIds
   ).filter((id) => index.has(id));
   const rows: (string | number | null)[][] = [
-    [`Similarity % (n = ${result.n})`, ...order.map((id) => label.get(id) ?? id)],
+    [headerCell("Similarity %", result.n, note), ...order.map((id) => label.get(id) ?? id)],
   ];
   for (const a of order) {
     const i = index.get(a) as number;
@@ -52,12 +57,12 @@ export function similarityCsv(cards: Labels, result: AnalysisResult): string {
 }
 
 /** Placement matrix in % of n (cards in admin order × groups, Other, Unsorted). */
-export function placementCsv(cards: Labels, result: AnalysisResult): string | null {
+export function placementCsv(cards: Labels, result: AnalysisResult, note?: string): string | null {
   const p = result.placement;
   if (!p) return null;
   const label = new Map(cards.map((c) => [c.id, c.label]));
   const rows: (string | number | null)[][] = [
-    [`Placement % (n = ${p.n})`, ...p.columns.map((c) => c.label)],
+    [headerCell("Placement %", p.n, note), ...p.columns.map((c) => c.label)],
   ];
   p.cardIds.forEach((id, i) => rows.push([label.get(id) ?? id, ...p.ratio[i].map(pct)]));
   return toCsv(rows);
