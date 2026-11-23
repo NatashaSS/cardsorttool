@@ -2,8 +2,8 @@
 
 Guidance for AI coding agents (and humans) working in this repository.
 
-> **Status: v1 feature-complete (Waves 0–2 done).** Every MUST and SHOULD requirement has tests;
-> Wave 3 (card images, analysis filters) is in progress — see `docs/IMPLEMENTATION_PLAN.md` §6.
+> **Status: Waves 0–3 done** (v1 + card images + analysis filters). Every MUST and SHOULD
+> requirement has tests; deferred items are listed in `docs/IMPLEMENTATION_PLAN.md` §6.
 
 ## What this app is
 
@@ -63,6 +63,8 @@ src/
     completion.ts         completion rules (getCompletionBlockers)
     participant-fields.ts field catalogue + buildParticipantSchema
     countries.ts          ISO country codes / names
+    card-images.ts        accepted image types, size limit, messages (STU-13)
+    analysis-filter.ts    analysis filter parsing / matching / options (ANL-09)
   server/                 server only
     env.ts                environment config
     ids.ts                id / token / slug generation

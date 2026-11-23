@@ -499,7 +499,19 @@ boards. The UI always shows `n`.
 - **UI:** the editor's card list shows a thumbnail with Upload / Replace / Remove; the board's
   sticky note shows the image above the label (`loading="lazy"`, `alt` = label, max height
   ~7.5 rem, `object-contain`), falling back to the label on error.
-- Duplicating a study copies the image rows; FK cascades delete them with the card/study.
+- Duplicating a study copies the image rows (`INSERT … SELECT`, data never leaves SQLite); FK
+  cascades delete them with the card/study.
+- Shared constants (accepted types, 2 MB limit, `accept` string, messages) live in
+  `src/lib/card-images.ts`; the service is `src/server/services/card-images.ts`.
+- Upload limits: empty files are rejected; `PUT` refuses before parsing when `Content-Length`
+  exceeds 2 MB + 256 KB of multipart overhead, and the service re-checks the file size; non-multipart
+  bodies or a missing `file` field → 400. The editor pre-checks declared type and size; the server
+  is the authority.
+- `updated_at` is ISO text; the URL's `v` is its milliseconds, and a replace always moves it
+  forward so the URL changes. The image GET also sends `Content-Length` and `Last-Modified`.
+- Load-failure fallback also checks `img.complete && naturalWidth === 0` on mount, because a
+  server-rendered image can fail before hydration attaches `onError`.
+- While a study isn't a draft, the editor hides the image buttons (thumbnails stay visible).
 
 ### Analysis filters [ANL-09]
 
@@ -512,8 +524,25 @@ boards. The UI always shows `n`.
 - **Options:** the analysis view also returns `filterOptions` — per enabled participant field:
   key, label, and values `{ value, label, count }` computed over the boards that pass the status
   and exclusion rules but *before* participant filters (so options don't vanish as you filter).
-- **Data:** `loadAnalysisInput` applies the filter to the board set before computing, so every
-  section and `n` reflect it. The engine (`src/server/analysis`) is unchanged.
+- **Data:** `loadAnalysisData(db, id, { includeInProgress, filter })` → `{ input, filter,
+  filterOptions, unfilteredN }` (`loadAnalysisInput` delegates to it). Boards are loaded with their
+  participant JSON and filtered in memory; placement rows of filtered-out boards are skipped, so
+  the query count stays fixed. The engine (`src/server/analysis`) is unchanged.
+- **Code:** pure parsing/matching/options logic in `src/lib/analysis-filter.ts` (shared by the
+  service, routes, server page and dashboard); UI in `src/components/admin/analysis/FilterBar.tsx`.
+- **Options details:** text values ordered by count then alphabetically, labelled (and keyed in the
+  URL) by the most common spelling, capped at 100 per field with a "hidden values" note; selected
+  values are always listed (count 0 if absent) so chips never vanish; "(not answered)" last;
+  self-described genders count under "Prefer to self-describe". The active filter is normalised
+  (enabled fields only, configured order, trimmed, de-duplicated); limits: 500 params, 500 chars
+  per value.
+- **View/UI:** `AnalysisView` adds `filter`, `filterOptions`, `unfilteredN` ("filtered from N" in
+  the summary). Per-field disclosure panels with checkboxes + counts, a search box above 8 values,
+  Escape/outside-click close; chips + "Clear all"; hidden when the study collects no fields. URL
+  state via `window.history.replaceState` (the client refetches the API; no server re-render);
+  `includeInProgress=1` is kept in the page URL too.
+- **CSV:** a filtered export names the filter in the header cell, e.g.
+  `Similarity % (n = 2; Seniority: Senior, Lead / Principal)`, and the file name ends `-filtered`.
 
 ## 12. Security
 

@@ -333,6 +333,10 @@ they run in parallel. Waves 1–2 are finished, so file ownership is reassigned 
   `loadAnalysisInput`, filter UI (per-field multi-select, chips, clear all, URL state), CSV
   exports honouring filters.
 
+> **Progress: Wave 3 complete.** M and N merged; `req:coverage --strict` reports 69/69 MUST and
+> 11/11 SHOULD; 385 unit/integration + 64 e2e tests pass; a v1 database upgrades via migration
+> `0001_card_images`. Coordinator follow-up: N's filter logic moved to `src/lib/analysis-filter.ts`.
+
 ### Not in scope (deferred)
 
 ANL-08 (merge group names), and the former L items: NFR-04 load check through the real UI,
