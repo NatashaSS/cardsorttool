@@ -6,11 +6,13 @@ export const card = (
   id: string,
   origin: CardDTO["origin"] = "predefined",
   description: string | null = null,
+  imageUrl: string | null = null,
 ): CardDTO => ({
   id,
   label: `Label ${id}`,
   description,
   origin,
+  imageUrl,
 });
 
 export const group = (

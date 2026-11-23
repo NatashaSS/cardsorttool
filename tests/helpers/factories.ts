@@ -4,11 +4,13 @@ import { nanoid } from "nanoid";
 import type { DB } from "@/server/db/open";
 import {
   boards,
+  cardImages,
   cards,
   groups,
   placements,
   studies,
   type BoardRow,
+  type CardImageRow,
   type CardRow,
   type GroupRow,
   type StudyRow,
@@ -26,7 +28,9 @@ export function makeStudy(db: DB, overrides: StudyOverrides = {}): StudyRow {
   const { settings, ...rest } = overrides;
   const row: StudyRow = {
     id: nanoid(),
-    slug: nanoid(12).toLowerCase().replace(/[^a-z0-9]/g, "x"),
+    slug: nanoid(12)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "x"),
     title: "Test study",
     description: "",
     instructions: "Please add the cards to groups where you feel they naturally belong",
@@ -104,6 +108,32 @@ export function makeBoard(db: DB, studyId: string, overrides: Partial<BoardRow> 
   return row;
 }
 
-export function place(db: DB, boardId: string, cardId: string, groupId: string, position = 0): void {
+export function place(
+  db: DB,
+  boardId: string,
+  cardId: string,
+  groupId: string,
+  position = 0,
+): void {
   db.insert(placements).values({ boardId, cardId, groupId, position }).run();
+}
+
+/** STU-13: attach an image row to a card directly (defaults: a tiny PNG header). */
+export function makeCardImage(
+  db: DB,
+  cardId: string,
+  overrides: Partial<Omit<CardImageRow, "cardId">> = {},
+): CardImageRow {
+  const data =
+    overrides.data ?? Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+  const row: CardImageRow = {
+    cardId,
+    mimeType: "image/png",
+    data,
+    byteSize: data.byteLength,
+    updatedAt: now(),
+    ...overrides,
+  };
+  db.insert(cardImages).values(row).run();
+  return row;
 }

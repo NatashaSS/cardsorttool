@@ -1,10 +1,12 @@
 "use client";
-// STU-07 predefined cards (add / inline edit / delete / reorder) and STU-08 bulk paste.
+// STU-07 predefined cards (add / inline edit / delete / reorder), STU-08 bulk paste and
+// STU-13 card images.
 import { useState, type FormEvent } from "react";
 import { Button, Input, Notice, Textarea } from "@/components/ui";
 import type { AdminCardDTO, BulkAddCardsResponse } from "@/lib/api-types";
 import { LIMITS } from "@/lib/types";
 import { adminApi } from "./api";
+import { CardImageButtons, CardThumbnail, precheckCardImage } from "./CardImageControls";
 import { arrayMove } from "./fields-model";
 import { SortableList } from "./SortableList";
 import { ErrorNotice, LockedHint, Section, useAction, type SectionProps } from "./shared";
@@ -48,6 +50,12 @@ export function CardsSection({ study, locked, onStudyChange }: SectionProps) {
     }
   }
 
+  const replaceCard = (card: AdminCardDTO) =>
+    onStudyChange((prev) => ({
+      ...prev,
+      cards: prev.cards.map((c) => (c.id === card.id ? card : c)),
+    }));
+
   async function saveEdit(id: string) {
     if (!edit.label.trim()) {
       list.setError({ message: "Enter a card label", lines: [] });
@@ -60,10 +68,7 @@ export function CardsSection({ study, locked, onStudyChange }: SectionProps) {
       }),
     );
     if (card) {
-      onStudyChange((prev) => ({
-        ...prev,
-        cards: prev.cards.map((c) => (c.id === id ? card : c)),
-      }));
+      replaceCard(card);
       setEditingId(null);
     }
   }
@@ -74,6 +79,27 @@ export function CardsSection({ study, locked, onStudyChange }: SectionProps) {
       return true;
     });
     if (ok) onStudyChange((prev) => ({ ...prev, cards: prev.cards.filter((c) => c.id !== id) }));
+  }
+
+  async function uploadImage(id: string, file: File) {
+    const problem = precheckCardImage(file);
+    if (problem) {
+      list.setError({ message: problem, lines: [] });
+      return;
+    }
+    const form = new FormData();
+    form.append("file", file);
+    const card = await list.run(() =>
+      adminApi<AdminCardDTO>(`${base}/${id}/image`, { method: "PUT", body: form }),
+    );
+    if (card) replaceCard(card);
+  }
+
+  async function removeImage(id: string) {
+    const card = await list.run(() =>
+      adminApi<AdminCardDTO>(`${base}/${id}/image`, { method: "DELETE" }),
+    );
+    if (card) replaceCard(card);
   }
 
   async function move(from: number, to: number) {
@@ -168,6 +194,7 @@ export function CardsSection({ study, locked, onStudyChange }: SectionProps) {
                 </form>
               ) : (
                 <div className="flex items-start gap-2">
+                  <CardThumbnail card={c} />
                   <div className="min-w-0 flex-1 py-1">
                     <p className="text-sm" data-testid="card-label">
                       {c.label}
@@ -176,6 +203,12 @@ export function CardsSection({ study, locked, onStudyChange }: SectionProps) {
                   </div>
                   {!locked && (
                     <>
+                      <CardImageButtons
+                        card={c}
+                        busy={list.busy}
+                        onUpload={(file) => uploadImage(c.id, file)}
+                        onRemove={() => removeImage(c.id)}
+                      />
                       <Button
                         size="sm"
                         variant="ghost"
